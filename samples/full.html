@@ -1,0 +1,3468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎫 Enhanced Multi-Format Ticket Processor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --error-color: #dc2626;
+            --info-color: #0891b2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+            color: var(--gray-800);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(5, 150, 105, 0.1));
+            border-radius: 20px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            color: var(--gray-600);
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            font-weight: 500;
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .mode-btn {
+            padding: 1rem 2rem;
+            border: 2px solid var(--gray-200);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .mode-btn:hover:not(.active) {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--gray-50), white);
+            padding: 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .card-header h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-header p {
+            color: var(--gray-600);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 2rem;
+        }
+
+        .upload-area {
+            border: 3px dashed var(--gray-300);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--gray-50);
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--success-color);
+            background: rgba(5, 150, 105, 0.1);
+            transform: scale(1.02);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .upload-area.file-loaded {
+            border-color: var(--success-color);
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(5, 150, 105, 0.05));
+            border-style: solid;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--gray-400);
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            transform: scale(1.1);
+            color: var(--primary-color);
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: var(--gray-500);
+        }
+
+        .file-list {
+            margin: 2rem 0;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .file-item:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .file-item.processed {
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(5, 150, 105, 0.05));
+            border-color: var(--success-color);
+        }
+
+        .file-item.error {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.05));
+            border-color: var(--error-color);
+        }
+
+        .file-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--gray-800);
+        }
+
+        .file-details {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .file-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            gap: 0.25rem;
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-ready {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(5, 150, 105, 0.3);
+        }
+
+        .status-processing {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .status-complete {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-error {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.875rem 1.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.3s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #047857);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--error-color), #b91c1c);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--gray-600), var(--gray-700));
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .progress-container {
+            margin: 2rem 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: var(--gray-200);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            transition: width 0.3s ease;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.2) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0.2) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 20px 20px;
+            animation: progress-stripe 1s linear infinite;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 0.75rem;
+            font-weight: 700;
+            color: var(--gray-700);
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--gray-200);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .alert {
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            border-left: 5px solid;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(8, 145, 178, 0.1), rgba(8, 145, 178, 0.05));
+            border-color: var(--info-color);
+            color: var(--info-color);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(5, 150, 105, 0.05));
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.05));
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+
+        .debug-panel {
+            background: var(--gray-900);
+            color: #00ff00;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--gray-700);
+        }
+
+        .debug-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .debug-panel::-webkit-scrollbar-track {
+            background: var(--gray-800);
+        }
+
+        .debug-panel::-webkit-scrollbar-thumb {
+            background: var(--gray-600);
+            border-radius: 4px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .ticket-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ticket-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .ticket-card.matched {
+            border-color: var(--success-color);
+        }
+
+        .ticket-card.unmatched {
+            border-color: var(--error-color);
+        }
+
+        .ticket-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--gray-50), white);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .ticket-header h4 {
+            color: var(--gray-800);
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .ticket-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .ticket-details {
+            padding: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            line-height: 1.6;
+        }
+
+        .ticket-details strong {
+            color: var(--gray-800);
+            font-weight: 600;
+        }
+
+        .validation-panel {
+            background: linear-gradient(135deg, var(--gray-50), white);
+            border: 1px solid var(--gray-200);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .validation-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--gray-200);
+            transition: all 0.3s ease;
+        }
+
+        .validation-item:hover {
+            background: rgba(0,0,0,0.02);
+            border-radius: 8px;
+            margin: 0 -0.5rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        .validation-item:last-child {
+            border-bottom: none;
+        }
+
+        .validation-icon {
+            margin-right: 1rem;
+            font-size: 1.5rem;
+            min-width: 2rem;
+        }
+
+        .validation-success {
+            color: var(--success-color);
+        }
+
+        .validation-error {
+            color: var(--error-color);
+        }
+
+        .validation-warning {
+            color: var(--warning-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        .upload-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .upload-table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            padding: 1.5rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .upload-table td {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            vertical-align: top;
+        }
+
+        .upload-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .csv-preview {
+            margin: 2rem 0;
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .csv-preview table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .csv-preview th, .csv-preview td {
+            padding: 1rem 0.75rem;
+            border: 1px solid var(--gray-200);
+            text-align: left;
+            font-size: 0.875rem;
+        }
+
+        .csv-preview th {
+            background: linear-gradient(135deg, var(--gray-100), var(--gray-50));
+            font-weight: 700;
+            color: var(--gray-800);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .csv-preview tr:nth-child(even) {
+            background: var(--gray-50);
+        }
+
+        .csv-preview tr:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                opacity: 1; 
+            }
+            50% { 
+                opacity: 0.7; 
+            }
+        }
+
+        @keyframes progress-stripe {
+            0% { 
+                background-position: 0 0; 
+            }
+            100% { 
+                background-position: 20px 0; 
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .mode-selector {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .card-content {
+                padding: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .upload-table {
+                font-size: 0.8rem;
+            }
+
+            .upload-table th,
+            .upload-table td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .processing-mode-info {
+            background: linear-gradient(135deg, rgba(8, 145, 178, 0.1), rgba(8, 145, 178, 0.05));
+            border: 1px solid rgba(8, 145, 178, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            color: var(--gray-700);
+        }
+
+        .feature-list li::before {
+            content: '✅';
+            margin-right: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--gray-900);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎫 Enhanced Multi-Format Ticket Processor</h1>
+            <p>Professional-grade CSV & PDF processing with intelligent ticket detection, precision splitting, comprehensive validation, and advanced reporting capabilities</p>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="switchMode('multi-csv')" id="multiCsvBtn">
+                📊 Multi-CSV Processing
+            </button>
+            <button class="mode-btn" onclick="switchMode('csv-pdf-pairs')" id="csvPdfBtn">
+                📋 CSV-PDF Pair Processing
+            </button>
+        </div>
+
+        <!-- Multi-CSV Processing Mode -->
+        <div id="multiCsvMode" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>📊 Multi-CSV Data Converter & Merger</h2>
+                    <p>Process multiple CSV files simultaneously with intelligent REPRINT filtering and comprehensive data extraction</p>
+                </div>
+                <div class="card-content">
+                    <div class="processing-mode-info">
+                        <h3>🚀 Advanced Multi-File Processing Features:</h3>
+                        <ul class="feature-list">
+                            <li><strong>Batch Upload:</strong> Process unlimited CSV files simultaneously with drag & drop support</li>
+                            <li><strong>Smart Filtering:</strong> Automatically extract REPRINT tickets while excluding VOID tickets</li>
+                            <li><strong>Reference Parsing:</strong> Intelligent extraction of job numbers, cost codes, and project references</li>
+                            <li><strong>Status Detection:</strong> Advanced recognition of REPRINT, VOID, and original ticket statuses</li>
+                            <li><strong>Error Resilience:</strong> Problematic files won't interrupt the entire processing workflow</li>
+                            <li><strong>Comprehensive Reporting:</strong> Detailed statistics and processing reports with VOID ticket tracking</li>
+                        </ul>
+                    </div>
+
+                    <div class="upload-area" id="multiCsvUploadArea">
+                        <input type="file" id="multiCsvFileInput" accept=".csv" multiple style="display: none;">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-text">Click here to select multiple CSV files</div>
+                        <div class="upload-subtext">or drag and drop CSV files here • Supports unlimited file selection</div>
+                    </div>
+                    
+                    <div id="multiCsvFileSection" style="display: none;">
+                        <h3 style="margin: 2rem 0 1rem 0; color: var(--gray-800); font-weight: 700;">📋 Selected Files:</h3>
+                        <div id="multiCsvFileList" class="file-list"></div>
+                        <div class="progress-container" id="multiCsvProgressContainer">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="multiCsvProgressFill"></div>
+                            </div>
+                            <div class="progress-text" id="multiCsvProgressText">0%</div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="processMultipleCSVs()" id="multiCsvProcessBtn">
+                                🚀 Process All Files
+                            </button>
+                            <button class="btn btn-danger" onclick="clearMultiCsvFiles()">
+                                🗑️ Clear All Files
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="multiCsvStatsSection">
+                <div class="card-header">
+                    <h2>📊 Multi-CSV Processing Statistics</h2>
+                    <p>Comprehensive breakdown of processed files and extracted ticket data</p>
+                </div>
+                <div class="card-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvTotalFiles">0</div>
+                            <div class="stat-label">Total Files</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvProcessedFiles">0</div>
+                            <div class="stat-label">Processed Files</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvTotalTickets">0</div>
+                            <div class="stat-label">Total Tickets Found</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvReprintTickets">0</div>
+                            <div class="stat-label">REPRINT Tickets (Included)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvVoidTickets">0</div>
+                            <div class="stat-label">VOID Tickets (Excluded)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvOriginalTickets">0</div>
+                            <div class="stat-label">Original Tickets</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvErrorFiles">0</div>
+                            <div class="stat-label">Files with Errors</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="multiCsvUniqueReferences">0</div>
+                            <div class="stat-label">Unique References</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="multiCsvResultsSection">
+                <div class="card-header">
+                    <h2>📋 Processing Results & Data Preview</h2>
+                    <p>Preview of merged ticket data and download options</p>
+                </div>
+                <div class="card-content">
+                    <div id="multiCsvResultsInfo"></div>
+                    <div class="csv-preview" id="multiCsvPreviewTable"></div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="downloadMultiCsvMerged()" id="multiCsvDownloadBtn" style="display: none;">
+                            📊 Download Merged CSV (REPRINT Only)
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadMultiCsvReport()" id="multiCsvReportBtn" style="display: none;">
+                            📋 Download Detailed Report
+                        </button>
+                        <button class="btn btn-primary" onclick="downloadMultiCsvByReference()" id="multiCsvReferenceBtn" style="display: none;">
+                            📁 Download by Reference Groups
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CSV-PDF Pair Processing Mode -->
+        <div id="csvPdfMode" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>📋 CSV-PDF Pair Processing</h2>
+                    <p>Upload matching CSV and PDF file pairs for comprehensive ticket image extraction and validation</p>
+                </div>
+                <div class="card-content">
+                    <div class="processing-mode-info">
+                        <h3>🎯 Advanced Pair Processing Features:</h3>
+                        <ul class="feature-list">
+                            <li><strong>Multi-Format Detection:</strong> Handles various ticket layouts and invoice formats</li>
+                            <li><strong>Precision Boundary Detection:</strong> AI-powered algorithms for accurate ticket image splitting</li>
+                            <li><strong>Status Recognition:</strong> Distinguishes REPRINT, VOID, and original tickets from both sources</li>
+                            <li><strong>Reference Cross-Validation:</strong> Matches job numbers and references between CSV and PDF</li>
+                            <li><strong>Image Quality Validation:</strong> Ensures extracted ticket images meet quality standards</li>
+                            <li><strong>Comprehensive Matching:</strong> Validates perfect correspondence between CSV data and PDF images</li>
+                        </ul>
+                    </div>
+
+                    <table class="upload-table" id="csvPdfFileTable">
+                        <thead>
+                            <tr>
+                                <th>📄 CSV File (Invoice Data)</th>
+                                <th>📑 PDF File (Ticket Images)</th>
+                                <th>📊 Status</th>
+                                <th>⚙️ Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="csvPdfFileTableBody">
+                            <!-- Dynamic rows will be added here -->
+                        </tbody>
+                    </table>
+
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="addCsvPdfFileRow()">
+                            ➕ Add File Pair
+                        </button>
+                        <button class="btn btn-success" onclick="processCsvPdfPairs()" id="csvPdfProcessBtn" disabled>
+                            🚀 Process All Pairs
+                        </button>
+                        <button class="btn btn-danger" onclick="clearCsvPdfFiles()">
+                            🗑️ Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-container" id="csvPdfProgressContainer">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>⚡ Advanced Processing Pipeline</h2>
+                        <p>Real-time monitoring of CSV parsing, PDF image extraction, and validation processes</p>
+                    </div>
+                    <div class="card-content">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="csvPdfProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="csvPdfProgressText">0%</div>
+                        <div id="csvPdfStatusText" style="text-align: center; margin-top: 1rem; color: var(--gray-600); font-weight: 600;">Initializing advanced processing pipeline...</div>
+                        <div class="debug-panel" id="csvPdfDebugPanel">
+                            === ENHANCED PROCESSING LOG ===<br/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="csvPdfStatsSection">
+                <div class="card-header">
+                    <h2>📊 CSV-PDF Processing Statistics</h2>
+                    <p>Detailed metrics and validation results from paired file processing</p>
+                </div>
+                <div class="card-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfTotalPairs">0</div>
+                            <div class="stat-label">File Pairs Processed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfTotalTickets">0</div>
+                            <div class="stat-label">CSV Tickets Found</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfTotalImages">0</div>
+                            <div class="stat-label">PDF Images Extracted</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfMatchedTickets">0</div>
+                            <div class="stat-label">Successfully Matched</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfUnmatchedCSV">0</div>
+                            <div class="stat-label">Missing PDF Images</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfUnmatchedPDF">0</div>
+                            <div class="stat-label">Extra PDF Images</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfReprintCount">0</div>
+                            <div class="stat-label">REPRINT Tickets</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="csvPdfVoidCount">0</div>
+                            <div class="stat-label">VOID Tickets</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="csvPdfValidationSection">
+                <div class="card-header">
+                    <h2>✅ Advanced Validation & Quality Control</h2>
+                    <p>Comprehensive validation results and quality assurance metrics</p>
+                </div>
+                <div class="card-content">
+                    <div id="csvPdfValidationResults"></div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="csvPdfPreviewSection">
+                <div class="card-header">
+                    <h2>📄 Enhanced CSV Preview</h2>
+                    <p>Preview of merged and validated ticket data with image references</p>
+                </div>
+                <div class="card-content">
+                    <div class="csv-preview" id="csvPdfPreview"></div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="csvPdfDownloadSection">
+                <div class="card-header">
+                    <h2>💾 Professional Download Options</h2>
+                    <p>Multiple export formats for different use cases and workflows</p>
+                </div>
+                <div class="card-content">
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="downloadStructuredCSV()">
+                            📊 Download Enhanced CSV
+                        </button>
+                        <button class="btn btn-success" onclick="downloadAllImages()">
+                            🖼️ Download All Images (ZIP)
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadByReference()">
+                            📁 Download by Reference Groups
+                        </button>
+                        <button class="btn btn-primary" onclick="downloadValidationReport()">
+                            📋 Download Validation Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="csvPdfResultsSection">
+                <div class="card-header">
+                    <h2>🎯 Ticket Matching Results</h2>
+                    <p>Visual representation of matched and unmatched tickets with quality indicators</p>
+                </div>
+                <div class="card-content">
+                    <div class="results-grid" id="csvPdfResultsGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set PDF.js worker for PDF processing
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Global variables for multi-CSV mode
+        let multiCsvFiles = [];
+        let multiCsvConvertedData = [];
+        let multiCsvVoidTickets = [];
+        let multiCsvProcessingStats = {
+            totalFiles: 0,
+            processedFiles: 0,
+            errorFiles: 0,
+            totalTickets: 0,
+            reprintTickets: 0,
+            voidTickets: 0,
+            originalTickets: 0,
+            uniqueReferences: 0,
+            fileDetails: [],
+            referenceGroups: {}
+        };
+
+        // Global variables for CSV-PDF mode
+        let csvPdfFilePairs = [];
+        let csvPdfProcessedData = {
+            csvTickets: [],
+            pdfImages: [],
+            matchedTickets: [],
+            unmatchedCSV: [],
+            unmatchedPDF: [],
+            referenceGroups: {},
+            validationResults: [],
+            reprintCount: 0,
+            voidCount: 0,
+            originalCount: 0
+        };
+
+        let debugLog = '';
+        let currentMode = 'multi-csv';
+
+        // Mode switching functionality
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update button states
+            document.getElementById('multiCsvBtn').classList.toggle('active', mode === 'multi-csv');
+            document.getElementById('csvPdfBtn').classList.toggle('active', mode === 'csv-pdf-pairs');
+            
+            // Show/hide content
+            document.getElementById('multiCsvMode').classList.toggle('active', mode === 'multi-csv');
+            document.getElementById('csvPdfMode').classList.toggle('active', mode === 'csv-pdf-pairs');
+        }
+
+        // Initialize event listeners when page loads
+        window.onload = function() {
+            initializeMultiCsvMode();
+            initializeCsvPdfMode();
+            logDebug('🚀 Enhanced Multi-Format Ticket Processor initialized');
+        };
+
+        // Debug logging function
+        function logDebug(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog += `[${timestamp}] ${message}<br/>`;
+            
+            // Update debug panels in both modes
+            const multiCsvDebugPanel = document.getElementById('multiCsvDebugPanel');
+            const csvPdfDebugPanel = document.getElementById('csvPdfDebugPanel');
+            
+            if (multiCsvDebugPanel) {
+                multiCsvDebugPanel.innerHTML = debugLog;
+                multiCsvDebugPanel.scrollTop = multiCsvDebugPanel.scrollHeight;
+            }
+            
+            if (csvPdfDebugPanel) {
+                csvPdfDebugPanel.innerHTML = debugLog;
+                csvPdfDebugPanel.scrollTop = csvPdfDebugPanel.scrollHeight;
+            }
+            
+            console.log(message);
+        }
+
+        // MULTI-CSV MODE FUNCTIONS
+        function initializeMultiCsvMode() {
+            const uploadArea = document.getElementById('multiCsvUploadArea');
+            const fileInput = document.getElementById('multiCsvFileInput');
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(file => 
+                    file.name.toLowerCase().endsWith('.csv')
+                );
+                if (files.length > 0) {
+                    addMultiCsvFiles(files);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                if (files.length > 0) {
+                    addMultiCsvFiles(files);
+                }
+            });
+        }
+
+        function addMultiCsvFiles(files) {
+            multiCsvFiles = [...multiCsvFiles, ...files];
+            updateMultiCsvFileList();
+            document.getElementById('multiCsvFileSection').style.display = 'block';
+        }
+
+        function updateMultiCsvFileList() {
+            const fileList = document.getElementById('multiCsvFileList');
+            const processBtn = document.getElementById('multiCsvProcessBtn');
+            
+            fileList.innerHTML = '';
+            
+            multiCsvFiles.forEach((file, index) => {
+                const fileDetail = multiCsvProcessingStats.fileDetails.find(f => f.name === file.name);
+                const status = fileDetail ? fileDetail.status : 'pending';
+                const ticketCount = fileDetail ? fileDetail.ticketCount : 0;
+                
+                const fileItem = document.createElement('div');
+                fileItem.className = `file-item ${status === 'processed' ? 'processed' : ''} ${status === 'error' ? 'error' : ''}`;
+                fileItem.id = `multiCsv-file-${index}`;
+                
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-details">
+                            ${formatFileSize(file.size)} • ${new Date(file.lastModified).toLocaleDateString()}
+                            ${ticketCount > 0 ? ` • ${ticketCount} tickets extracted` : ''}
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <span class="status-badge status-${status}">
+                            ${status === 'pending' ? '⏳' : status === 'processed' ? '✅' : status === 'error' ? '❌' : '📄'} 
+                            ${status.toUpperCase()}
+                        </span>
+                        <button class="btn btn-danger" onclick="removeMultiCsvFile(${index})" style="padding: 0.5rem; font-size: 0.8rem;">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                
+                fileList.appendChild(fileItem);
+            });
+            
+            processBtn.disabled = multiCsvFiles.length === 0;
+            processBtn.innerHTML = `🚀 Process ${multiCsvFiles.length} File${multiCsvFiles.length !== 1 ? 's' : ''}`;
+        }
+
+        function removeMultiCsvFile(index) {
+            const removedFile = multiCsvFiles[index];
+            multiCsvFiles.splice(index, 1);
+            
+            // Remove from stats if it was processed
+            const fileDetailIndex = multiCsvProcessingStats.fileDetails.findIndex(f => f.name === removedFile.name);
+            if (fileDetailIndex !== -1) {
+                const removedDetail = multiCsvProcessingStats.fileDetails[fileDetailIndex];
+                multiCsvProcessingStats.fileDetails.splice(fileDetailIndex, 1);
+                
+                if (removedDetail.status === 'processed') {
+                    multiCsvProcessingStats.processedFiles--;
+                    multiCsvProcessingStats.totalTickets -= removedDetail.ticketCount;
+                    multiCsvProcessingStats.reprintTickets -= removedDetail.reprintCount;
+                    multiCsvProcessingStats.voidTickets -= removedDetail.voidCount;
+                    multiCsvProcessingStats.originalTickets -= removedDetail.originalCount;
+                } else if (removedDetail.status === 'error') {
+                    multiCsvProcessingStats.errorFiles--;
+                }
+            }
+            
+            updateMultiCsvFileList();
+            updateMultiCsvStats();
+            
+            if (multiCsvFiles.length === 0) {
+                document.getElementById('multiCsvFileSection').style.display = 'none';
+                resetMultiCsvResults();
+            }
+        }
+
+        function clearMultiCsvFiles() {
+            multiCsvFiles = [];
+            multiCsvProcessingStats = {
+                totalFiles: 0,
+                processedFiles: 0,
+                errorFiles: 0,
+                totalTickets: 0,
+                reprintTickets: 0,
+                voidTickets: 0,
+                originalTickets: 0,
+                uniqueReferences: 0,
+                fileDetails: [],
+                referenceGroups: {}
+            };
+            multiCsvConvertedData = [];
+            multiCsvVoidTickets = [];
+            document.getElementById('multiCsvFileSection').style.display = 'none';
+            resetMultiCsvResults();
+            updateMultiCsvFileList();
+        }
+
+        function resetMultiCsvResults() {
+            document.getElementById('multiCsvStatsSection').classList.add('hidden');
+            document.getElementById('multiCsvResultsSection').classList.add('hidden');
+        }
+
+        async function processMultipleCSVs() {
+            const processBtn = document.getElementById('multiCsvProcessBtn');
+            const progressContainer = document.getElementById('multiCsvProgressContainer');
+            const progressFill = document.getElementById('multiCsvProgressFill');
+            const progressText = document.getElementById('multiCsvProgressText');
+            
+            processBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            
+            // Reset stats
+            multiCsvProcessingStats = {
+                totalFiles: multiCsvFiles.length,
+                processedFiles: 0,
+                errorFiles: 0,
+                totalTickets: 0,
+                reprintTickets: 0,
+                voidTickets: 0,
+                originalTickets: 0,
+                uniqueReferences: 0,
+                fileDetails: [],
+                referenceGroups: {}
+            };
+            multiCsvConvertedData = [];
+            multiCsvVoidTickets = [];
+            
+            logDebug('🚀 Starting enhanced multi-CSV processing...');
+            document.getElementById('multiCsvStatsSection').classList.remove('hidden');
+            
+            for (let i = 0; i < multiCsvFiles.length; i++) {
+                const file = multiCsvFiles[i];
+                const progress = ((i + 1) / multiCsvFiles.length) * 100;
+                progressFill.style.width = `${progress}%`;
+                progressText.textContent = `${Math.round(progress)}%`;
+                
+                try {
+                    logDebug(`📂 Processing file: ${file.name}`);
+                    const fileData = await readFileAsText(file);
+                    const extractedData = extractEnhancedTicketData(fileData, file.name);
+                    
+                    // Filter tickets by status
+                    const reprintTickets = extractedData.reprintTickets;
+                    const voidTicketsFromFile = extractedData.voidTickets;
+                    const originalTicketsFromFile = extractedData.originalTickets;
+                    
+                    // Add REPRINT and ORIGINAL tickets to converted data
+                    multiCsvConvertedData = [...multiCsvConvertedData, ...reprintTickets, ...originalTicketsFromFile];
+                    multiCsvVoidTickets = [...multiCsvVoidTickets, ...voidTicketsFromFile];
+                    
+                    // Update reference groups
+                    [...reprintTickets, ...originalTicketsFromFile].forEach(ticket => {
+                        const refKey = ticket.reference || 'NO_REFERENCE';
+                        if (!multiCsvProcessingStats.referenceGroups[refKey]) {
+                            multiCsvProcessingStats.referenceGroups[refKey] = [];
+                        }
+                        multiCsvProcessingStats.referenceGroups[refKey].push(ticket);
+                    });
+                    
+                    multiCsvProcessingStats.fileDetails.push({
+                        name: file.name,
+                        status: 'processed',
+                        ticketCount: extractedData.totalFound,
+                        reprintCount: reprintTickets.length,
+                        voidCount: voidTicketsFromFile.length,
+                        originalCount: originalTicketsFromFile.length,
+                        error: null
+                    });
+                    
+                    multiCsvProcessingStats.processedFiles++;
+                    multiCsvProcessingStats.totalTickets += extractedData.totalFound;
+                    multiCsvProcessingStats.reprintTickets += reprintTickets.length;
+                    multiCsvProcessingStats.voidTickets += voidTicketsFromFile.length;
+                    multiCsvProcessingStats.originalTickets += originalTicketsFromFile.length;
+                    
+                    logDebug(`✅ File processed: ${extractedData.totalFound} tickets (${reprintTickets.length} REPRINT, ${voidTicketsFromFile.length} VOID, ${originalTicketsFromFile.length} ORIGINAL)`);
+                    
+                } catch (error) {
+                    multiCsvProcessingStats.fileDetails.push({
+                        name: file.name,
+                        status: 'error',
+                        ticketCount: 0,
+                        reprintCount: 0,
+                        voidCount: 0,
+                        originalCount: 0,
+                        error: error.message
+                    });
+                    
+                    multiCsvProcessingStats.errorFiles++;
+                    logDebug(`❌ Error processing ${file.name}: ${error.message}`);
+                }
+                
+                updateMultiCsvFileList();
+                updateMultiCsvStats();
+                
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Calculate unique references
+            multiCsvProcessingStats.uniqueReferences = Object.keys(multiCsvProcessingStats.referenceGroups).length;
+            
+            progressContainer.style.display = 'none';
+            processBtn.disabled = false;
+            
+            displayMultiCsvResults();
+            logDebug('✅ Multi-CSV processing completed successfully!');
+        }
+
+        function extractEnhancedTicketData(csvContent, fileName) {
+            const lines = csvContent.split('\n');
+            const reprintTickets = [];
+            const voidTickets = [];
+            const originalTickets = [];
+            
+            let currentTicket = null;
+            let currentStatus = null;
+            let lineNumber = 0;
+            
+            logDebug(`📊 Processing CSV: ${fileName} (${lines.length} lines)`);
+            
+            for (let i = 0; i < lines.length; i++) {
+                lineNumber++;
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const columns = parseEnhancedCSVLine(line);
+                
+                // Enhanced ticket detection
+                if (isTicketHeaderLine(columns)) {
+                    if (currentTicket && currentStatus) {
+                        // Process the previous ticket
+                        if (currentStatus === 'REPRINT') {
+                            reprintTickets.push(currentTicket);
+                        } else if (currentStatus === 'VOID') {
+                            voidTickets.push({
+                                ...currentTicket,
+                                fileName: fileName,
+                                lineNumber: lineNumber - 1
+                            });
+                        } else {
+                            originalTickets.push(currentTicket);
+                        }
+                    }
+                    
+                    // Extract ticket number
+                    const ticketNumber = extractTicketNumber(columns);
+                    if (!ticketNumber) continue;
+                    
+                    // Determine status from context
+                    currentStatus = determineTicketStatus(line, lines, i);
+                    
+                    // Only create ticket object for non-void tickets (unless we want to track them)
+                    currentTicket = {
+                        ticketNumber: ticketNumber,
+                        status: currentStatus,
+                        attendant: '',
+                        entryDate: '',
+                        entryTime: '',
+                        exitDate: '',
+                        exitTime: '',
+                        vehicle: '',
+                        license: '',
+                        reference: '',
+                        note: '',
+                        grossWeight: 0,
+                        tareWeight: 0,
+                        netWeight: 0,
+                        material: '',
+                        sourceFile: fileName,
+                        lineNumber: lineNumber,
+                        rawLine: line
+                    };
+                    
+                    // Extract data from current line
+                    extractTicketDataFromLine(columns, currentTicket, lines, i);
+                    
+                } else if (currentTicket) {
+                    // Continue processing current ticket data
+                    extractTicketDataFromLine(columns, currentTicket, lines, i);
+                    
+                    // Check for material information
+                    for (const col of columns) {
+                        if (col && (col.includes('DEMO') || col.includes('CONST') || col.includes('MT'))) {
+                            if (!currentTicket.material) {
+                                currentTicket.material = col;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Process the last ticket
+            if (currentTicket && currentStatus) {
+                if (currentStatus === 'REPRINT') {
+                    reprintTickets.push(currentTicket);
+                } else if (currentStatus === 'VOID') {
+                    voidTickets.push({
+                        ...currentTicket,
+                        fileName: fileName,
+                        lineNumber: lineNumber
+                    });
+                } else {
+                    originalTickets.push(currentTicket);
+                }
+            }
+            
+            const totalFound = reprintTickets.length + voidTickets.length + originalTickets.length;
+            logDebug(`📋 Extraction complete: ${totalFound} total tickets (${reprintTickets.length} REPRINT, ${voidTickets.length} VOID, ${originalTickets.length} ORIGINAL)`);
+            
+            return {
+                reprintTickets,
+                voidTickets,
+                originalTickets,
+                totalFound
+            };
+        }
+
+        function isTicketHeaderLine(columns) {
+            // Enhanced ticket header detection
+            const patterns = [
+                /^TICKET\s*#?$/i,
+                /^TICKET$/i,
+                /^#$/
+            ];
+            
+            for (let i = 0; i < columns.length - 1; i++) {
+                if (patterns.some(pattern => pattern.test(columns[i]))) {
+                    const nextCol = columns[i + 1];
+                    if (nextCol && /^\d+$/.test(nextCol)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function extractTicketNumber(columns) {
+            for (let i = 0; i < columns.length - 1; i++) {
+                if (/^TICKET\s*#?$/i.test(columns[i]) || /^#$/.test(columns[i])) {
+                    const nextCol = columns[i + 1];
+                    if (nextCol && /^\d+$/.test(nextCol)) {
+                        return parseInt(nextCol);
+                    }
+                }
+            }
+            return null;
+        }
+
+        function determineTicketStatus(line, allLines, currentIndex) {
+            const lineText = line.toUpperCase();
+            const contextLines = allLines.slice(
+                Math.max(0, currentIndex - 2), 
+                Math.min(allLines.length, currentIndex + 3)
+            ).join(' ').toUpperCase();
+            
+            // Enhanced status detection
+            if (contextLines.includes('REPRINT') && contextLines.includes('VOID')) {
+                // Check if VOID comes after REPRINT
+                const reprintIndex = contextLines.indexOf('REPRINT');
+                const voidIndex = contextLines.indexOf('VOID');
+                if (voidIndex > reprintIndex) {
+                    return 'VOID';
+                }
+            }
+            
+            if (contextLines.includes('REPRINT')) {
+                return 'REPRINT';
+            }
+            
+            if (contextLines.includes('VOID')) {
+                return 'VOID';
+            }
+            
+            // Default to ORIGINAL if no specific status found
+            return 'ORIGINAL';
+        }
+
+        function parseEnhancedCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            let quoteChar = null;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (!inQuotes && (char === '"' || char === "'")) {
+                    inQuotes = true;
+                    quoteChar = char;
+                } else if (inQuotes && char === quoteChar) {
+                    if (i + 1 < line.length && line[i + 1] === quoteChar) {
+                        current += char;
+                        i++; // Skip next quote
+                    } else {
+                        inQuotes = false;
+                        quoteChar = null;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current.trim());
+            return result.map(item => item.replace(/^["']|["']$/g, ''));
+        }
+
+        function extractTicketDataFromLine(columns, ticket, allLines, currentLineIndex) {
+            // Extract data from current line with enhanced parsing
+            for (let j = 0; j < columns.length - 1; j++) {
+                const col = columns[j];
+                const nextCol = columns[j + 1];
+                
+                if ((col === 'ATTENDENT:' || col === 'ATTENDANT:') && nextCol) {
+                    ticket.attendant = nextCol;
+                } else if (col === 'VEHICLE:' && nextCol) {
+                    ticket.vehicle = nextCol;
+                } else if (col === 'LICENSE:' && nextCol) {
+                    ticket.license = nextCol;
+                } else if (col === 'REFERENCE:' && nextCol) {
+                    const parsed = parseEnhancedReference(nextCol);
+                    ticket.reference = parsed.main;
+                    ticket.note = parsed.additional;
+                } else if (col === 'ENTER:' && nextCol) {
+                    ticket.entryDate = formatEnhancedDate(nextCol);
+                    if (j + 2 < columns.length) {
+                        ticket.entryTime = columns[j + 2];
+                    }
+                } else if (col === 'EXIT:' && nextCol) {
+                    ticket.exitDate = formatEnhancedDate(nextCol);
+                    if (j + 2 < columns.length) {
+                        ticket.exitTime = columns[j + 2];
+                    }
+                } else if (col === 'GROSS' && nextCol) {
+                    ticket.grossWeight = parseEnhancedWeight(nextCol);
+                } else if (col === 'TARE' && nextCol) {
+                    ticket.tareWeight = parseEnhancedWeight(nextCol);
+                } else if (col === 'NET' && nextCol) {
+                    ticket.netWeight = parseEnhancedWeight(nextCol);
+                }
+            }
+        }
+
+        function parseEnhancedReference(fullReference) {
+            if (!fullReference || !fullReference.trim()) {
+                return { main: '', additional: '' };
+            }
+            
+            const ref = fullReference.trim();
+            
+            // Enhanced reference patterns
+            const patterns = [
+                {
+                    regex: /^(#\d+)\s+(.+)$/,
+                    main: (match) => match[1],
+                    additional: (match) => match[2]
+                },
+                {
+                    regex: /^TOPPSMM(\d+)\s*(.*)$/,
+                    main: (match) => `MM${match[1]}`,
+                    additional: (match) => match[2] ? `TOPPS ${match[2]}` : 'TOPPS'
+                },
+                {
+                    regex: /^(MM\d+)\s+(.+)$/,
+                    main: (match) => match[1],
+                    additional: (match) => match[2]
+                },
+                {
+                    regex: /JOB#?(\d+)/i,
+                    main: (match) => `JOB#${match[1]}`,
+                    additional: () => ''
+                },
+                {
+                    regex: /COST\s*CODE[#:\s]*(\w+)/i,
+                    main: (match) => `CODE${match[1]}`,
+                    additional: () => ''
+                },
+                {
+                    regex: /BIN#?(\d+)/i,
+                    main: (match) => `BIN#${match[1]}`,
+                    additional: () => ''
+                },
+                {
+                    regex: /(KLONDIKE|MANHOIST)/i,
+                    main: (match) => match[1].toUpperCase(),
+                    additional: () => ''
+                },
+                {
+                    regex: /^#\d+$/,
+                    main: (match) => match[0],
+                    additional: () => ''
+                },
+                {
+                    regex: /^MM\d+$/,
+                    main: (match) => match[0],
+                    additional: () => ''
+                }
+            ];
+            
+            for (const pattern of patterns) {
+                const match = ref.match(pattern.regex);
+                if (match) {
+                    return {
+                        main: pattern.main(match),
+                        additional: pattern.additional(match)
+                    };
+                }
+            }
+            
+            // If no pattern matches, try to split on first space
+            const parts = ref.split(/\s+/);
+            if (parts.length > 1) {
+                return {
+                    main: parts[0],
+                    additional: parts.slice(1).join(' ')
+                };
+            }
+            
+            return { main: ref, additional: '' };
+        }
+
+        function formatEnhancedDate(dateStr) {
+            if (!dateStr) return '';
+            
+            const formats = [
+                { pattern: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, order: [2, 1, 0] },
+                { pattern: /^(\d{4})-(\d{1,2})-(\d{1,2})$/, order: [0, 1, 2] },
+                { pattern: /^(\d{1,2})-(\d{1,2})-(\d{4})$/, order: [2, 1, 0] }
+            ];
+            
+            for (const format of formats) {
+                const match = dateStr.match(format.pattern);
+                if (match) {
+                    const year = match[format.order[0] + 1];
+                    const month = parseInt(match[format.order[1] + 1]);
+                    const day = parseInt(match[format.order[2] + 1]);
+                    
+                    const months = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                                   'July', 'August', 'September', 'October', 'November', 'December'];
+                    
+                    if (month >= 1 && month <= 12) {
+                        return `${months[month]} ${day}, ${year}`;
+                    }
+                }
+            }
+            
+            return dateStr;
+        }
+
+        function parseEnhancedWeight(weightStr) {
+            if (!weightStr) return 0;
+            
+            if (typeof weightStr === 'string') {
+                const cleaned = weightStr.replace(/[^0-9.-]/g, '');
+                const parsed = parseFloat(cleaned);
+                return isNaN(parsed) ? 0 : Math.round(parsed);
+            }
+            
+            return typeof weightStr === 'number' ? Math.round(weightStr) : 0;
+        }
+
+        function updateMultiCsvStats() {
+            const elements = {
+                totalFiles: document.getElementById('multiCsvTotalFiles'),
+                processedFiles: document.getElementById('multiCsvProcessedFiles'),
+                totalTickets: document.getElementById('multiCsvTotalTickets'),
+                reprintTickets: document.getElementById('multiCsvReprintTickets'),
+                voidTickets: document.getElementById('multiCsvVoidTickets'),
+                originalTickets: document.getElementById('multiCsvOriginalTickets'),
+                errorFiles: document.getElementById('multiCsvErrorFiles'),
+                uniqueReferences: document.getElementById('multiCsvUniqueReferences')
+            };
+            
+            Object.keys(elements).forEach(key => {
+                if (elements[key]) {
+                    animateNumberChange(elements[key], multiCsvProcessingStats[key] || 0);
+                }
+            });
+        }
+
+        function displayMultiCsvResults() {
+            const resultsSection = document.getElementById('multiCsvResultsSection');
+            const resultsInfo = document.getElementById('multiCsvResultsInfo');
+            const previewTable = document.getElementById('multiCsvPreviewTable');
+            const downloadBtn = document.getElementById('multiCsvDownloadBtn');
+            const reportBtn = document.getElementById('multiCsvReportBtn');
+            const referenceBtn = document.getElementById('multiCsvReferenceBtn');
+            
+            if (multiCsvConvertedData.length === 0) {
+                resultsInfo.innerHTML = `
+                    <div class="alert alert-error">
+                        <h3>❌ No Valid Ticket Data Found</h3>
+                        <p>No REPRINT or ORIGINAL tickets could be extracted from the processed files. Please check file formats and try again.</p>
+                    </div>
+                `;
+                resultsSection.classList.remove('hidden');
+                return;
+            }
+            
+            const alertClass = multiCsvProcessingStats.errorFiles > 0 ? 'alert-warning' : 'alert-success';
+            const statusIcon = multiCsvProcessingStats.errorFiles > 0 ? '⚠️' : '🎉';
+            
+            resultsInfo.innerHTML = `
+                <div class="alert ${alertClass}">
+                    <h3>${statusIcon} Multi-CSV Processing Complete!</h3>
+                    <p>
+                        <strong>Successfully processed ${multiCsvProcessingStats.processedFiles} of ${multiCsvProcessingStats.totalFiles} files</strong><br>
+                        <strong>REPRINT tickets included:</strong> ${multiCsvProcessingStats.reprintTickets}<br>
+                        <strong>ORIGINAL tickets included:</strong> ${multiCsvProcessingStats.originalTickets}<br>
+                        <strong>VOID tickets excluded:</strong> ${multiCsvProcessingStats.voidTickets}<br>
+                        <strong>Unique reference groups:</strong> ${multiCsvProcessingStats.uniqueReferences}
+                        ${multiCsvProcessingStats.errorFiles > 0 ? `<br><strong>Files with errors:</strong> ${multiCsvProcessingStats.errorFiles} (skipped)` : ''}
+                        ${multiCsvVoidTickets.length > 0 ? `<br><strong>⚠️ Note:</strong> ${multiCsvVoidTickets.length} VOID tickets were found and excluded from the merged data.` : ''}
+                    </p>
+                </div>
+            `;
+            
+            // Create enhanced preview table
+            createMultiCsvPreviewTable(previewTable);
+            
+            resultsSection.classList.remove('hidden');
+            downloadBtn.style.display = 'inline-flex';
+            reportBtn.style.display = 'inline-flex';
+            referenceBtn.style.display = 'inline-flex';
+        }
+
+        function createMultiCsvPreviewTable(container) {
+            const headers = [
+                'Ticket #', 'Status', 'Attendant', 'Entry Date', 'Entry Time', 'Exit Date', 'Exit Time',
+                'Vehicle', 'License', 'Reference', 'Note', 'Gross (kg)', 'Tare (kg)', 'Net (kg)', 
+                'Material', 'Source File'
+            ];
+            
+            let tableHTML = '<table><thead><tr>';
+            headers.forEach(header => {
+                tableHTML += `<th>${header}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>';
+            
+            // Show first 100 rows for preview
+            const previewData = multiCsvConvertedData.slice(0, 100);
+            previewData.forEach(ticket => {
+                tableHTML += '<tr>';
+                tableHTML += `<td><strong>${ticket.ticketNumber}</strong></td>`;
+                tableHTML += `<td><span class="status-badge status-${ticket.status.toLowerCase()}">${ticket.status}</span></td>`;
+                tableHTML += `<td>${ticket.attendant || ''}</td>`;
+                tableHTML += `<td>${ticket.entryDate || ''}</td>`;
+                tableHTML += `<td>${ticket.entryTime || ''}</td>`;
+                tableHTML += `<td>${ticket.exitDate || ''}</td>`;
+                tableHTML += `<td>${ticket.exitTime || ''}</td>`;
+                tableHTML += `<td>${ticket.vehicle || ''}</td>`;
+                tableHTML += `<td>${ticket.license || ''}</td>`;
+                tableHTML += `<td><strong>${ticket.reference || ''}</strong></td>`;
+                tableHTML += `<td>${ticket.note || ''}</td>`;
+                tableHTML += `<td>${ticket.grossWeight || 0}</td>`;
+                tableHTML += `<td>${ticket.tareWeight || 0}</td>`;
+                tableHTML += `<td><strong>${ticket.netWeight || 0}</strong></td>`;
+                tableHTML += `<td>${ticket.material || ''}</td>`;
+                tableHTML += `<td><small>${ticket.sourceFile}</small></td>`;
+                tableHTML += '</tr>';
+            });
+            
+            if (multiCsvConvertedData.length > 100) {
+                tableHTML += `<tr><td colspan="${headers.length}" style="text-align: center; font-style: italic; background-color: var(--gray-50); padding: 1rem;">
+                    ... and ${multiCsvConvertedData.length - 100} more tickets (${multiCsvConvertedData.length} total)
+                </td></tr>`;
+            }
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function downloadMultiCsvMerged() {
+            if (multiCsvConvertedData.length === 0) return;
+            
+            const headers = [
+                'Ticket Number', 'Status', 'Attendant', 'Entry Date', 'Entry Time', 'Exit Date', 'Exit Time',
+                'Vehicle', 'License', 'Reference', 'Note', 'Gross (kg)', 'Tare (kg)', 'Net (kg)', 
+                'Material', 'Source File', 'Line Number'
+            ];
+            
+            let csvContent = headers.join(',') + '\n';
+            
+            multiCsvConvertedData.forEach(ticket => {
+                const row = headers.map(header => {
+                    let value = '';
+                    switch (header) {
+                        case 'Ticket Number': value = ticket.ticketNumber; break;
+                        case 'Status': value = ticket.status; break;
+                        case 'Attendant': value = ticket.attendant || ''; break;
+                        case 'Entry Date': value = ticket.entryDate || ''; break;
+                        case 'Entry Time': value = ticket.entryTime || ''; break;
+                        case 'Exit Date': value = ticket.exitDate || ''; break;
+                        case 'Exit Time': value = ticket.exitTime || ''; break;
+                        case 'Vehicle': value = ticket.vehicle || ''; break;
+                        case 'License': value = ticket.license || ''; break;
+                        case 'Reference': value = ticket.reference || ''; break;
+                        case 'Note': value = ticket.note || ''; break;
+                        case 'Gross (kg)': value = ticket.grossWeight || 0; break;
+                        case 'Tare (kg)': value = ticket.tareWeight || 0; break;
+                        case 'Net (kg)': value = ticket.netWeight || 0; break;
+                        case 'Material': value = ticket.material || ''; break;
+                        case 'Source File': value = ticket.sourceFile || ''; break;
+                        case 'Line Number': value = ticket.lineNumber || ''; break;
+                        default: value = '';
+                    }
+                    
+                    // Escape commas and quotes
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                        value = '"' + value.replace(/"/g, '""') + '"';
+                    }
+                    return value;
+                });
+                csvContent += row.join(',') + '\n';
+            });
+            
+            downloadBlob(csvContent, 'enhanced_multi_csv_merged_tickets.csv', 'text/csv');
+            logDebug(`📊 Downloaded merged CSV with ${multiCsvConvertedData.length} tickets`);
+        }
+
+        function downloadMultiCsvReport() {
+            const timestamp = new Date().toLocaleString();
+            let report = `Enhanced Multi-CSV Processing Report\n`;
+            report += `Generated: ${timestamp}\n`;
+            report += `System: Advanced Multi-Format Processor v3.0\n\n`;
+            
+            report += `=== PROCESSING SUMMARY ===\n`;
+            report += `Total Files Uploaded: ${multiCsvProcessingStats.totalFiles}\n`;
+            report += `Successfully Processed: ${multiCsvProcessingStats.processedFiles}\n`;
+            report += `Files with Errors: ${multiCsvProcessingStats.errorFiles}\n`;
+            report += `Total Tickets Found: ${multiCsvProcessingStats.totalTickets}\n`;
+            report += `REPRINT Tickets (Included): ${multiCsvProcessingStats.reprintTickets}\n`;
+            report += `ORIGINAL Tickets (Included): ${multiCsvProcessingStats.originalTickets}\n`;
+            report += `VOID Tickets (Excluded): ${multiCsvProcessingStats.voidTickets}\n`;
+            report += `Unique Reference Groups: ${multiCsvProcessingStats.uniqueReferences}\n`;
+            report += `Final Merged Records: ${multiCsvConvertedData.length}\n\n`;
+            
+            report += `=== FILE PROCESSING DETAILS ===\n`;
+            multiCsvProcessingStats.fileDetails.forEach(file => {
+                report += `${file.name}: ${file.status.toUpperCase()}`;
+                if (file.status === 'processed') {
+                    report += ` (Total: ${file.ticketCount}, REPRINT: ${file.reprintCount}, ORIGINAL: ${file.originalCount}, VOID: ${file.voidCount})`;
+                } else if (file.status === 'error') {
+                    report += ` (Error: ${file.error})`;
+                }
+                report += `\n`;
+            });
+            
+            if (Object.keys(multiCsvProcessingStats.referenceGroups).length > 0) {
+                report += `\n=== REFERENCE GROUPS ===\n`;
+                Object.entries(multiCsvProcessingStats.referenceGroups).forEach(([ref, tickets]) => {
+                    report += `${ref}: ${tickets.length} tickets\n`;
+                    tickets.slice(0, 5).forEach(t => {
+                        report += `  - Ticket #${t.ticketNumber} (${t.status}) - ${t.sourceFile}\n`;
+                    });
+                    if (tickets.length > 5) {
+                        report += `  ... and ${tickets.length - 5} more\n`;
+                    }
+                });
+            }
+            
+            if (multiCsvVoidTickets.length > 0) {
+                report += `\n=== VOID TICKETS (EXCLUDED) ===\n`;
+                report += `These ${multiCsvVoidTickets.length} VOID tickets were found but NOT included in the merged CSV:\n\n`;
+                multiCsvVoidTickets.forEach((ticket, index) => {
+                    report += `${index + 1}. Ticket #${ticket.ticketNumber} `;
+                    report += `(File: ${ticket.fileName}, Line: ${ticket.lineNumber})\n`;
+                    report += `   Attendant: ${ticket.attendant}\n`;
+                    report += `   Vehicle: ${ticket.vehicle}\n`;
+                    report += `   Reference: ${ticket.reference}\n`;
+                    report += `   Entry Date: ${ticket.entryDate}\n\n`;
+                });
+            }
+            
+            report += `\n=== PROCESSING LOG ===\n`;
+            report += debugLog.replace(/<br\/>/g, '\n').replace(/<[^>]*>/g, '');
+            
+            downloadBlob(report, 'enhanced_multi_csv_processing_report.txt', 'text/plain');
+            logDebug('📋 Downloaded comprehensive processing report');
+        }
+
+        async function downloadMultiCsvByReference() {
+            if (Object.keys(multiCsvProcessingStats.referenceGroups).length === 0) {
+                showAlert('No reference groups found to create separate downloads.', 'warning');
+                return;
+            }
+            
+            const zip = new JSZip();
+            
+            Object.entries(multiCsvProcessingStats.referenceGroups).forEach(([reference, tickets]) => {
+                const folderName = reference.replace(/[^a-zA-Z0-9]/g, '_');
+                const folder = zip.folder(folderName);
+                
+                // Create CSV for this reference group
+                const headers = [
+                    'Ticket Number', 'Status', 'Attendant', 'Entry Date', 'Entry Time', 'Exit Date', 'Exit Time',
+                    'Vehicle', 'License', 'Reference', 'Note', 'Gross (kg)', 'Tare (kg)', 'Net (kg)', 
+                    'Material', 'Source File', 'Line Number'
+                ];
+                
+                let csvContent = headers.join(',') + '\n';
+                tickets.forEach(ticket => {
+                    const row = headers.map(header => {
+                        let value = '';
+                        switch (header) {
+                            case 'Ticket Number': value = ticket.ticketNumber; break;
+                            case 'Status': value = ticket.status; break;
+                            case 'Attendant': value = ticket.attendant || ''; break;
+                            case 'Entry Date': value = ticket.entryDate || ''; break;
+                            case 'Entry Time': value = ticket.entryTime || ''; break;
+                            case 'Exit Date': value = ticket.exitDate || ''; break;
+                            case 'Exit Time': value = ticket.exitTime || ''; break;
+                            case 'Vehicle': value = ticket.vehicle || ''; break;
+                            case 'License': value = ticket.license || ''; break;
+                            case 'Reference': value = ticket.reference || ''; break;
+                            case 'Note': value = ticket.note || ''; break;
+                            case 'Gross (kg)': value = ticket.grossWeight || 0; break;
+                            case 'Tare (kg)': value = ticket.tareWeight || 0; break;
+                            case 'Net (kg)': value = ticket.netWeight || 0; break;
+                            case 'Material': value = ticket.material || ''; break;
+                            case 'Source File': value = ticket.sourceFile || ''; break;
+                            case 'Line Number': value = ticket.lineNumber || ''; break;
+                        }
+                        
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                            value = '"' + value.replace(/"/g, '""') + '"';
+                        }
+                        return value;
+                    });
+                    csvContent += row.join(',') + '\n';
+                });
+                
+                folder.file(`${folderName}_tickets.csv`, csvContent);
+                
+                // Add summary file
+                const summary = [
+                    `Reference Group: ${reference}`,
+                    `Total Tickets: ${tickets.length}`,
+                    `REPRINT: ${tickets.filter(t => t.status === 'REPRINT').length}`,
+                    `ORIGINAL: ${tickets.filter(t => t.status === 'ORIGINAL').length}`,
+                    `Total Weight: ${tickets.reduce((sum, t) => sum + (t.netWeight || 0), 0)} kg`,
+                    `\nSource Files:`,
+                    ...Array.from(new Set(tickets.map(t => t.sourceFile))).map(f => `- ${f}`),
+                    `\nTicket Numbers:`,
+                    ...tickets.map(t => `- Ticket #${t.ticketNumber} (${t.status})`)
+                ].join('\n');
+                
+                folder.file('_summary.txt', summary);
+            });
+            
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            downloadBlob(zipBlob, 'multi_csv_tickets_by_reference.zip', 'application/zip');
+            logDebug(`📁 Downloaded reference groups ZIP with ${Object.keys(multiCsvProcessingStats.referenceGroups).length} groups`);
+        }
+
+        // CSV-PDF MODE FUNCTIONS (Enhanced versions from original full.html)
+        function initializeCsvPdfMode() {
+            // Add initial file pair row
+            addCsvPdfFileRow();
+        }
+
+        function addCsvPdfFileRow() {
+            const tbody = document.getElementById('csvPdfFileTableBody');
+            const rowIndex = csvPdfFilePairs.length;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="upload-area" ondrop="handleCsvPdfDrop(event, ${rowIndex}, 'csv')"
+                         ondragover="handleCsvPdfDragOver(event)" ondragleave="handleCsvPdfDragLeave(event)"
+                         onclick="selectCsvPdfFile(${rowIndex}, 'csv')">
+                        <input type="file" accept=".csv" style="display: none;"
+                               onchange="handleCsvPdfFileSelect(event, ${rowIndex}, 'csv')">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-text">Drop CSV or click to select</div>
+                        <div class="upload-subtext">Invoice data file</div>
+                    </div>
+                    <div id="csvpdf-csv-info-${rowIndex}"></div>
+                </td>
+                <td>
+                    <div class="upload-area" ondrop="handleCsvPdfDrop(event, ${rowIndex}, 'pdf')"
+                         ondragover="handleCsvPdfDragOver(event)" ondragleave="handleCsvPdfDragLeave(event)"
+                         onclick="selectCsvPdfFile(${rowIndex}, 'pdf')">
+                        <input type="file" accept=".pdf" style="display: none;"
+                               onchange="handleCsvPdfFileSelect(event, ${rowIndex}, 'pdf')">
+                        <div class="upload-icon">📑</div>
+                        <div class="upload-text">Drop PDF or click to select</div>
+                        <div class="upload-subtext">Ticket images file</div>
+                    </div>
+                    <div id="csvpdf-pdf-info-${rowIndex}"></div>
+                </td>
+                <td>
+                    <span class="status-badge status-pending" id="csvpdf-status-${rowIndex}">⏳ PENDING</span>
+                </td>
+                <td>
+                    <button class="btn btn-danger" onclick="removeCsvPdfRow(${rowIndex})" style="padding: 0.5rem;">
+                        🗑️
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+            csvPdfFilePairs.push({ csv: null, pdf: null, status: 'pending' });
+            updateCsvPdfProcessButton();
+        }
+
+        function selectCsvPdfFile(rowIndex, type) {
+            const input = document.querySelector(`tr:nth-child(${rowIndex + 1}) td:nth-child(${type === 'csv' ? 1 : 2}) input`);
+            input.click();
+        }
+
+        function handleCsvPdfDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleCsvPdfDragLeave(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleCsvPdfDrop(event, rowIndex, type) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const expectedExt = type === 'csv' ? '.csv' : '.pdf';
+                if (file.name.toLowerCase().endsWith(expectedExt)) {
+                    setCsvPdfFile(rowIndex, type, file);
+                } else {
+                    showAlert(`Please drop a ${expectedExt.toUpperCase()} file`, 'error');
+                }
+            }
+        }
+
+        function handleCsvPdfFileSelect(event, rowIndex, type) {
+            const file = event.target.files[0];
+            if (file) {
+                setCsvPdfFile(rowIndex, type, file);
+            }
+        }
+
+        function setCsvPdfFile(rowIndex, type, file) {
+            csvPdfFilePairs[rowIndex][type] = file;
+
+            const infoDiv = document.getElementById(`csvpdf-${type}-info-${rowIndex}`);
+            infoDiv.innerHTML = `
+                <div class="file-info" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(5, 150, 105, 0.05)); border: 1px solid rgba(5, 150, 105, 0.2); border-radius: 8px;">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-details">${formatFileSize(file.size)} • ${new Date(file.lastModified).toLocaleDateString()}</div>
+                </div>
+            `;
+
+            // Update upload area
+            const uploadArea = document.querySelector(`tr:nth-child(${rowIndex + 1}) td:nth-child(${type === 'csv' ? 1 : 2}) .upload-area`);
+            uploadArea.classList.add('file-loaded');
+            uploadArea.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <div class="upload-text"><strong>${file.name}</strong></div>
+                <div class="upload-subtext">${formatFileSize(file.size)}</div>
+            `;
+
+            updateCsvPdfRowStatus(rowIndex);
+            updateCsvPdfProcessButton();
+        }
+
+        function updateCsvPdfRowStatus(rowIndex) {
+            const pair = csvPdfFilePairs[rowIndex];
+            const statusSpan = document.getElementById(`csvpdf-status-${rowIndex}`);
+
+            if (pair.csv && pair.pdf) {
+                statusSpan.innerHTML = '✅ READY';
+                statusSpan.className = 'status-badge status-ready';
+                pair.status = 'ready';
+            } else {
+                statusSpan.innerHTML = '⏳ PENDING';
+                statusSpan.className = 'status-badge status-pending';
+                pair.status = 'pending';
+            }
+        }
+
+        function removeCsvPdfRow(rowIndex) {
+            const tbody = document.getElementById('csvPdfFileTableBody');
+            tbody.children[rowIndex].remove();
+            csvPdfFilePairs.splice(rowIndex, 1);
+
+            rebuildCsvPdfTable();
+            updateCsvPdfProcessButton();
+        }
+
+        function rebuildCsvPdfTable() {
+            const tbody = document.getElementById('csvPdfFileTableBody');
+            tbody.innerHTML = '';
+
+            const currentPairs = [...csvPdfFilePairs];
+            csvPdfFilePairs = [];
+
+            currentPairs.forEach(pair => {
+                addCsvPdfFileRow();
+                const newIndex = csvPdfFilePairs.length - 1;
+                if (pair.csv) setCsvPdfFile(newIndex, 'csv', pair.csv);
+                if (pair.pdf) setCsvPdfFile(newIndex, 'pdf', pair.pdf);
+            });
+        }
+
+        function clearCsvPdfFiles() {
+            csvPdfFilePairs = [];
+            csvPdfProcessedData = {
+                csvTickets: [],
+                pdfImages: [],
+                matchedTickets: [],
+                unmatchedCSV: [],
+                unmatchedPDF: [],
+                referenceGroups: {},
+                validationResults: [],
+                reprintCount: 0,
+                voidCount: 0,
+                originalCount: 0
+            };
+            debugLog = '=== ENHANCED PROCESSING LOG ===<br/>';
+            document.getElementById('csvPdfFileTableBody').innerHTML = '';
+            document.getElementById('csvPdfStatsSection').classList.add('hidden');
+            document.getElementById('csvPdfValidationSection').classList.add('hidden');
+            document.getElementById('csvPdfPreviewSection').classList.add('hidden');
+            document.getElementById('csvPdfDownloadSection').classList.add('hidden');
+            document.getElementById('csvPdfResultsSection').classList.add('hidden');
+            addCsvPdfFileRow();
+            updateCsvPdfProcessButton();
+        }
+
+        function updateCsvPdfProcessButton() {
+            const processBtn = document.getElementById('csvPdfProcessBtn');
+            const readyPairs = csvPdfFilePairs.filter(pair => pair.status === 'ready').length;
+            processBtn.disabled = readyPairs === 0;
+            processBtn.innerHTML = `🚀 Process ${readyPairs} File Pair${readyPairs !== 1 ? 's' : ''}`;
+        }
+
+        async function processCsvPdfPairs() {
+            const progressContainer = document.getElementById('csvPdfProgressContainer');
+            const progressFill = document.getElementById('csvPdfProgressFill');
+            const progressText = document.getElementById('csvPdfProgressText');
+            const statusText = document.getElementById('csvPdfStatusText');
+
+            progressContainer.style.display = 'block';
+            progressContainer.scrollIntoView({ behavior: 'smooth' });
+
+            // Reset debug log
+            debugLog = '=== ENHANCED CSV-PDF PROCESSING LOG ===<br/>';
+            logDebug('🚀 Starting enhanced CSV-PDF pair processing...');
+
+            // Reset processed data
+            csvPdfProcessedData = {
+                csvTickets: [],
+                pdfImages: [],
+                matchedTickets: [],
+                unmatchedCSV: [],
+                unmatchedPDF: [],
+                referenceGroups: {},
+                validationResults: [],
+                reprintCount: 0,
+                voidCount: 0,
+                originalCount: 0
+            };
+
+            const readyPairs = csvPdfFilePairs.filter(pair => pair.status === 'ready');
+            let processedCount = 0;
+
+            try {
+                for (const pair of readyPairs) {
+                    const pairIndex = csvPdfFilePairs.indexOf(pair);
+                    logDebug(`📂 Processing pair: ${pair.csv.name} + ${pair.pdf.name}`);
+                    statusText.textContent = `Processing ${pair.csv.name} + ${pair.pdf.name}...`;
+
+                    // Update pair status
+                    const statusSpan = document.getElementById(`csvpdf-status-${pairIndex}`);
+                    statusSpan.innerHTML = '🔄 PROCESSING';
+                    statusSpan.className = 'status-badge status-processing';
+
+                    // Process CSV with enhanced parsing
+                    logDebug('📊 Starting enhanced CSV processing...');
+                    const csvContent = await readFileAsText(pair.csv);
+                    const csvTickets = await extractCSVTicketsEnhanced(csvContent, pair.csv.name);
+                    logDebug(`✅ CSV processed: ${csvTickets.length} valid tickets found`);
+
+                    // Process PDF with enhanced splitting if PDF.js is available
+                    if (typeof pdfjsLib !== 'undefined') {
+                        logDebug('📑 Starting enhanced PDF processing...');
+                        const pdfImages = await extractPDFImagesEnhanced(pair.pdf);
+                        logDebug(`✅ PDF processed: ${pdfImages.length} ticket images extracted`);
+                        csvPdfProcessedData.pdfImages.push(...pdfImages);
+                    } else {
+                        logDebug('⚠️ PDF.js not available, skipping PDF processing');
+                        showAlert('PDF.js library not loaded. PDF processing will be skipped.', 'warning');
+                    }
+
+                    // Store CSV results
+                    csvPdfProcessedData.csvTickets.push(...csvTickets);
+
+                    // Update progress
+                    processedCount++;
+                    const progress = (processedCount / readyPairs.length) * 100;
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `${Math.round(progress)}%`;
+
+                    // Update pair status
+                    statusSpan.innerHTML = '✅ COMPLETE';
+                    statusSpan.className = 'status-badge status-complete';
+                    pair.status = 'complete';
+
+                    logDebug(`✅ Pair processing complete`);
+                }
+
+                // Enhanced validation and matching
+                logDebug('🔍 Starting comprehensive validation...');
+                await validateAndMatchTicketsEnhanced();
+                logDebug('✅ Validation complete, displaying results...');
+
+                displayCsvPdfResults();
+                displayCsvPdfPreview();
+
+            } catch (error) {
+                console.error('Processing error:', error);
+                logDebug(`❌ ERROR: ${error.message}`);
+                statusText.textContent = `Error: ${error.message}`;
+                showAlert(`Processing failed: ${error.message}`, 'error');
+            } finally {
+                progressContainer.style.display = 'none';
+            }
+        }
+
+        // Enhanced CSV processing for CSV-PDF mode
+        async function extractCSVTicketsEnhanced(csvContent, fileName) {
+            logDebug(`📊 Enhanced CSV Processing: ${fileName}`);
+            const lines = csvContent.split('\n');
+            const tickets = [];
+            let currentTicket = null;
+            let totalFound = 0;
+            let reprintCount = 0;
+            let voidCount = 0;
+            let originalCount = 0;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const columns = parseEnhancedCSVLine(line);
+
+                // Enhanced ticket detection patterns
+                const ticketPatterns = [
+                    /^TICKET\s*#?$/i,
+                    /^TICKET$/i,
+                    /^#$/
+                ];
+
+                let isTicketLine = false;
+                let ticketNumber = null;
+
+                // Check for ticket line patterns
+                for (let j = 0; j < columns.length - 1; j++) {
+                    if (ticketPatterns.some(pattern => pattern.test(columns[j]))) {
+                        const nextCol = columns[j + 1];
+                        if (nextCol && /^\d+$/.test(nextCol)) {
+                            isTicketLine = true;
+                            ticketNumber = parseInt(nextCol);
+                            break;
+                        }
+                    }
+                }
+
+                if (isTicketLine && ticketNumber) {
+                    totalFound++;
+
+                    if (currentTicket) {
+                        tickets.push(currentTicket);
+                    }
+
+                    // Enhanced status detection
+                    const lineText = line.toUpperCase();
+                    const contextLines = lines.slice(Math.max(0, i-2), Math.min(lines.length, i+3)).join(' ').toUpperCase();
+
+                    let status = 'ORIGINAL';
+
+                    if (contextLines.includes('REPRINT') && contextLines.includes('VOID')) {
+                        const reprintIndex = contextLines.indexOf('REPRINT');
+                        const voidIndex = contextLines.indexOf('VOID');
+                        if (voidIndex > reprintIndex) {
+                            status = 'VOID';
+                            voidCount++;
+                        } else {
+                            status = 'REPRINT';
+                            reprintCount++;
+                        }
+                    } else if (contextLines.includes('REPRINT')) {
+                        status = 'REPRINT';
+                        reprintCount++;
+                    } else if (contextLines.includes('VOID')) {
+                        status = 'VOID';
+                        voidCount++;
+                    } else {
+                        status = 'ORIGINAL';
+                        originalCount++;
+                    }
+
+                    currentTicket = {
+                        ticketNumber: ticketNumber,
+                        status: status,
+                        attendant: '',
+                        entryDate: '',
+                        entryTime: '',
+                        exitDate: '',
+                        exitTime: '',
+                        vehicle: '',
+                        license: '',
+                        reference: '',
+                        note: '',
+                        grossWeight: 0,
+                        tareWeight: 0,
+                        netWeight: 0,
+                        material: '',
+                        sourceFile: fileName,
+                        lineNumber: i + 1,
+                        rawLine: line
+                    };
+
+                    extractTicketDataFromLine(columns, currentTicket, lines, i);
+                    
+                } else if (currentTicket) {
+                    // Continue processing current ticket data
+                    extractTicketDataFromLine(columns, currentTicket, lines, i);
+
+                    // Check for material information
+                    for (const col of columns) {
+                        if (col && (col.includes('DEMO') || col.includes('CONST') || col.includes('MT'))) {
+                            if (!currentTicket.material) {
+                                currentTicket.material = col;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (currentTicket) {
+                tickets.push(currentTicket);
+            }
+
+            // Update global counters
+            csvPdfProcessedData.reprintCount += reprintCount;
+            csvPdfProcessedData.voidCount += voidCount;
+            csvPdfProcessedData.originalCount += originalCount;
+
+            logDebug(`📋 CSV ${fileName} Summary:`);
+            logDebug(`  - Total found: ${totalFound} tickets`);
+            logDebug(`  - REPRINT: ${reprintCount}`);
+            logDebug(`  - VOID: ${voidCount}`);
+            logDebug(`  - ORIGINAL: ${originalCount}`);
+            logDebug(`  - Extracted for processing: ${tickets.length}`);
+
+            return tickets;
+        }
+
+        // Enhanced PDF processing (simplified version since we need to handle PDF.js availability)
+        async function extractPDFImagesEnhanced(pdfFile) {
+            if (typeof pdfjsLib === 'undefined') {
+                logDebug('❌ PDF.js not available - cannot process PDF files');
+                return [];
+            }
+
+            logDebug(`🔍 COMPREHENSIVE PDF Processing: ${pdfFile.name}`);
+            const arrayBuffer = await pdfFile.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            const images = [];
+
+            logDebug(`📄 PDF has ${pdf.numPages} pages - applying comprehensive detection`);
+
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+
+                // Get text content with maximum detail
+                const textContent = await page.getTextContent();
+                const textItems = textContent.items.map(item => ({
+                    str: item.str,
+                    x: item.transform[4],
+                    y: item.transform[5],
+                    height: item.height,
+                    width: item.width || 20,
+                    fontSize: item.height || 12
+                }));
+
+                logDebug(`📍 Page ${pageNum}: Analyzing ${textItems.length} text elements`);
+
+                // Detect ticket boundaries
+                const ticketBoundaries = await detectTicketBoundariesEnhanced(textItems, page, pageNum);
+                logDebug(`🎯 Page ${pageNum}: Found ${ticketBoundaries.length} ticket boundaries`);
+
+                if (ticketBoundaries.length === 0) {
+                    logDebug(`⚠️ No tickets detected on page ${pageNum}`);
+                    continue;
+                }
+
+                // Create high-resolution canvas
+                const viewport = page.getViewport({ scale: 3.0 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Render page
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+
+                // Extract individual ticket images
+                for (const boundary of ticketBoundaries) {
+                    try {
+                        const ticketCanvas = await extractTicketFromBoundary(canvas, viewport, boundary, pageNum);
+                        const imageBlob = await new Promise(resolve => {
+                            ticketCanvas.toBlob(resolve, 'image/png', 1.0);
+                        });
+
+                        const image = {
+                            ticketNumber: boundary.ticketNumber,
+                            pageNumber: pageNum,
+                            reference: boundary.reference || 'NO_REFERENCE',
+                            fileName: `ticket_${boundary.ticketNumber}_page_${pageNum}.png`,
+                            imageBlob: imageBlob,
+                            sourceFile: pdfFile.name,
+                            boundary: boundary,
+                            confidence: boundary.confidence || 1.0,
+                            extractedText: boundary.extractedText || '',
+                            status: boundary.status || 'REPRINT'
+                        };
+
+                        images.push(image);
+                        logDebug(`✅ Successfully extracted ticket ${boundary.ticketNumber} from page ${pageNum}`);
+                        
+                    } catch (error) {
+                        logDebug(`❌ Failed to extract ticket ${boundary.ticketNumber}: ${error.message}`);
+                    }
+                }
+
+                // Small delay between pages
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            logDebug(`🎯 PDF processing complete: ${images.length} ticket images extracted`);
+            return images;
+        }
+
+        // Simplified ticket boundary detection
+        async function detectTicketBoundariesEnhanced(textItems, page, pageNum) {
+            const boundaries = [];
+            const pageHeight = (await page.getViewport({ scale: 1.0 })).height;
+
+            // Look for ticket numbers
+            const ticketItems = textItems.filter(item => 
+                /TICKET\s*#?\s*(\d+)/i.test(item.str) || 
+                /^(\d{6})$/.test(item.str)
+            );
+
+            for (const item of ticketItems) {
+                let ticketNumber = null;
+                
+                // Extract ticket number
+                const ticketMatch = item.str.match(/TICKET\s*#?\s*(\d+)/i);
+                if (ticketMatch) {
+                    ticketNumber = parseInt(ticketMatch[1]);
+                } else if (/^(\d{6})$/.test(item.str)) {
+                    ticketNumber = parseInt(item.str);
+                }
+
+                if (ticketNumber) {
+                    // Create boundary around ticket
+                    const boundary = {
+                        ticketNumber: ticketNumber,
+                        reference: 'DETECTED',
+                        status: 'REPRINT',
+                        extractedText: item.str,
+                        x: Math.max(0, item.x - 50),
+                        y: Math.max(0, pageHeight - item.y - 300),
+                        width: 600,
+                        height: 400,
+                        confidence: 0.8
+                    };
+
+                    boundaries.push(boundary);
+                }
+            }
+
+            return boundaries;
+        }
+
+        // Simplified ticket extraction
+        async function extractTicketFromBoundary(sourceCanvas, viewport, boundary, pageNum) {
+            const ticketCanvas = document.createElement('canvas');
+            const ticketContext = ticketCanvas.getContext('2d');
+
+            const scaleX = sourceCanvas.width / viewport.width;
+            const scaleY = sourceCanvas.height / viewport.height;
+
+            let scaledX = Math.max(0, boundary.x * scaleX);
+            let scaledY = Math.max(0, boundary.y * scaleY);
+            let scaledWidth = Math.min(sourceCanvas.width - scaledX, boundary.width * scaleX);
+            let scaledHeight = Math.min(sourceCanvas.height - scaledY, boundary.height * scaleY);
+
+            // Set canvas size
+            ticketCanvas.width = scaledWidth;
+            ticketCanvas.height = scaledHeight;
+
+            // Draw the ticket portion
+            ticketContext.drawImage(
+                sourceCanvas,
+                scaledX, scaledY, scaledWidth, scaledHeight,
+                0, 0, scaledWidth, scaledHeight
+            );
+
+            return ticketCanvas;
+        }
+
+        // Enhanced validation and matching
+        async function validateAndMatchTicketsEnhanced() {
+            logDebug('🔍 Starting comprehensive validation and matching...');
+
+            // Create lookup maps
+            const csvTicketMap = new Map();
+            const pdfImageMap = new Map();
+
+            // Build CSV map
+            csvPdfProcessedData.csvTickets.forEach(ticket => {
+                const existing = csvTicketMap.get(ticket.ticketNumber);
+                if (!existing || ticket.status === 'REPRINT') {
+                    csvTicketMap.set(ticket.ticketNumber, ticket);
+                }
+            });
+
+            // Build PDF map
+            csvPdfProcessedData.pdfImages.forEach(img => {
+                const existing = pdfImageMap.get(img.ticketNumber);
+                if (!existing || img.confidence > existing.confidence) {
+                    pdfImageMap.set(img.ticketNumber, img);
+                }
+            });
+
+            logDebug(`📊 Validation Data:`);
+            logDebug(`  - CSV Tickets: ${csvPdfProcessedData.csvTickets.length} (${csvTicketMap.size} unique)`);
+            logDebug(`  - PDF Images: ${csvPdfProcessedData.pdfImages.length} (${pdfImageMap.size} unique)`);
+
+            // Reset result arrays
+            csvPdfProcessedData.matchedTickets = [];
+            csvPdfProcessedData.unmatchedCSV = [];
+            csvPdfProcessedData.unmatchedPDF = [];
+            csvPdfProcessedData.referenceGroups = {};
+            csvPdfProcessedData.validationResults = [];
+
+            // Match tickets
+            for (const [ticketNumber, csvTicket] of csvTicketMap) {
+                const pdfImage = pdfImageMap.get(ticketNumber);
+
+                if (pdfImage) {
+                    const matchedTicket = {
+                        ...csvTicket,
+                        imageBlob: pdfImage.imageBlob,
+                        imagePath: pdfImage.fileName,
+                        pdfSource: pdfImage.sourceFile,
+                        matchQuality: 1.0,
+                        confidence: pdfImage.confidence,
+                        pdfReference: pdfImage.reference
+                    };
+
+                    csvPdfProcessedData.matchedTickets.push(matchedTicket);
+
+                    // Reference grouping
+                    const refKey = csvTicket.reference || pdfImage.reference || 'NO_REFERENCE';
+                    if (!csvPdfProcessedData.referenceGroups[refKey]) {
+                        csvPdfProcessedData.referenceGroups[refKey] = [];
+                    }
+                    csvPdfProcessedData.referenceGroups[refKey].push(matchedTicket);
+
+                    csvPdfProcessedData.validationResults.push({
+                        type: 'match',
+                        ticketNumber: ticketNumber,
+                        message: `✅ Ticket ${ticketNumber} matched successfully (${csvTicket.status})`
+                    });
+
+                    logDebug(`✅ Matched ticket ${ticketNumber} (${csvTicket.status})`);
+                } else {
+                    csvPdfProcessedData.unmatchedCSV.push(csvTicket);
+                    csvPdfProcessedData.validationResults.push({
+                        type: 'missing_pdf',
+                        ticketNumber: ticketNumber,
+                        message: `❌ CSV ticket ${ticketNumber} (${csvTicket.status}) has no matching PDF image`
+                    });
+                    logDebug(`❌ No PDF image found for CSV ticket ${ticketNumber}`);
+                }
+            }
+
+            // Find unmatched PDF images
+            for (const [ticketNumber, pdfImage] of pdfImageMap) {
+                if (!csvTicketMap.has(ticketNumber)) {
+                    csvPdfProcessedData.unmatchedPDF.push(pdfImage);
+                    csvPdfProcessedData.validationResults.push({
+                        type: 'missing_csv',
+                        ticketNumber: ticketNumber,
+                        message: `❌ PDF image for ticket ${ticketNumber} has no matching CSV data`
+                    });
+                    logDebug(`❌ No CSV data found for PDF ticket ${ticketNumber}`);
+                }
+            }
+
+            logDebug('✅ Enhanced validation complete');
+            logDebug(`📊 Results: ${csvPdfProcessedData.matchedTickets.length} matched, ${csvPdfProcessedData.unmatchedCSV.length} unmatched CSV, ${csvPdfProcessedData.unmatchedPDF.length} unmatched PDF`);
+        }
+
+        function displayCsvPdfResults() {
+            const completedPairs = csvPdfFilePairs.filter(p => p.status === 'complete').length;
+
+            // Update statistics
+            updateStatWithAnimation('csvPdfTotalPairs', completedPairs);
+            updateStatWithAnimation('csvPdfTotalTickets', csvPdfProcessedData.csvTickets.length);
+            updateStatWithAnimation('csvPdfTotalImages', csvPdfProcessedData.pdfImages.length);
+            updateStatWithAnimation('csvPdfMatchedTickets', csvPdfProcessedData.matchedTickets.length);
+            updateStatWithAnimation('csvPdfUnmatchedCSV', csvPdfProcessedData.unmatchedCSV.length);
+            updateStatWithAnimation('csvPdfUnmatchedPDF', csvPdfProcessedData.unmatchedPDF.length);
+            updateStatWithAnimation('csvPdfReprintCount', csvPdfProcessedData.reprintCount);
+            updateStatWithAnimation('csvPdfVoidCount', csvPdfProcessedData.voidCount);
+
+            // Display validation results
+            displayCsvPdfValidationResults();
+
+            // Display ticket cards
+            displayCsvPdfTicketCards();
+
+            // Show sections
+            showSection('csvPdfStatsSection');
+            showSection('csvPdfValidationSection');
+            showSection('csvPdfPreviewSection');
+            showSection('csvPdfDownloadSection');
+            showSection('csvPdfResultsSection');
+
+            logDebug('🎉 CSV-PDF results display complete!');
+        }
+
+        function displayCsvPdfValidationResults() {
+            const validationResults = document.getElementById('csvPdfValidationResults');
+
+            const matchCount = csvPdfProcessedData.validationResults.filter(r => r.type === 'match').length;
+            const missingPdfCount = csvPdfProcessedData.validationResults.filter(r => r.type === 'missing_pdf').length;
+            const missingCsvCount = csvPdfProcessedData.validationResults.filter(r => r.type === 'missing_csv').length;
+
+            let alertClass = 'alert-success';
+            let summary = '';
+
+            if (missingPdfCount === 0 && missingCsvCount === 0) {
+                alertClass = 'alert-success';
+                summary = `🎉 Perfect Match! All ${matchCount} tickets have both CSV data and PDF images with validated correspondence.`;
+            } else if (matchCount > 0) {
+                alertClass = 'alert-warning';
+                summary = `⚠️ Partial Match: ${matchCount} tickets matched successfully.`;
+                if (missingPdfCount > 0) summary += ` ${missingPdfCount} CSV tickets missing PDF images.`;
+                if (missingCsvCount > 0) summary += ` ${missingCsvCount} PDF images without CSV data.`;
+            } else {
+                alertClass = 'alert-error';
+                summary = `❌ No successful matches found. Please check file compatibility.`;
+            }
+
+            validationResults.innerHTML = `
+                <div class="alert ${alertClass}">
+                    <h3>📋 Enhanced Validation Summary</h3>
+                    <p>${summary}</p>
+                    <small>
+                        REPRINT: ${csvPdfProcessedData.reprintCount} •
+                        VOID: ${csvPdfProcessedData.voidCount} •
+                        ORIGINAL: ${csvPdfProcessedData.originalCount} •
+                        Reference Groups: ${Object.keys(csvPdfProcessedData.referenceGroups).length}
+                    </small>
+                </div>
+
+                <div class="validation-panel">
+                    <h4>Detailed Validation Results (Latest ${Math.min(20, csvPdfProcessedData.validationResults.length)})</h4>
+                    ${csvPdfProcessedData.validationResults.slice(0, 20).map(result => `
+                        <div class="validation-item">
+                            <span class="validation-icon ${getValidationIconClass(result.type)}">
+                                ${getValidationIcon(result.type)}
+                            </span>
+                            <span>${result.message}</span>
+                        </div>
+                    `).join('')}
+                    ${csvPdfProcessedData.validationResults.length > 20 ? `
+                        <div class="validation-item">
+                            <span class="validation-icon">📄</span>
+                            <span>... and ${csvPdfProcessedData.validationResults.length - 20} more results</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function displayCsvPdfTicketCards() {
+            const grid = document.getElementById('csvPdfResultsGrid');
+            grid.innerHTML = '';
+
+            // Show matched tickets first
+            const sortedMatched = csvPdfProcessedData.matchedTickets.sort((a, b) => a.ticketNumber - b.ticketNumber);
+            sortedMatched.forEach(ticket => {
+                const card = createTicketCard(ticket, true);
+                grid.appendChild(card);
+            });
+
+            // Show unmatched CSV tickets
+            const sortedUnmatchedCSV = csvPdfProcessedData.unmatchedCSV.sort((a, b) => a.ticketNumber - b.ticketNumber);
+            sortedUnmatchedCSV.forEach(ticket => {
+                const card = createTicketCard(ticket, false);
+                grid.appendChild(card);
+            });
+        }
+
+        function createTicketCard(ticket, isMatched) {
+            const card = document.createElement('div');
+            card.className = `ticket-card ${isMatched ? 'matched' : 'unmatched'} fade-in`;
+
+            const statusIcon = ticket.status === 'REPRINT' ? '🔄' : ticket.status === 'VOID' ? '❌' : '📄';
+            const matchIcon = isMatched ? '✅' : '❌';
+
+            const imageHtml = isMatched ?
+                `<img src="${URL.createObjectURL(ticket.imageBlob)}" alt="Ticket ${ticket.ticketNumber}" class="ticket-image">` :
+                `<div style="height: 200px; display: flex; align-items: center; justify-content: center; background: var(--gray-100); color: var(--gray-400); font-size: 3rem;">📄</div>`;
+
+            card.innerHTML = `
+                <div class="ticket-header">
+                    <h4>${matchIcon} ${statusIcon} Ticket #${ticket.ticketNumber}</h4>
+                    ${isMatched ? `
+                        <small>
+                            Match Quality: ${(ticket.matchQuality * 100).toFixed(1)}% •
+                            Confidence: ${(ticket.confidence * 100).toFixed(1)}%
+                        </small>
+                    ` : ''}
+                </div>
+                ${imageHtml}
+                <div class="ticket-details">
+                    <strong>Status:</strong> ${ticket.status}<br>
+                    <strong>Reference:</strong> ${ticket.reference || 'N/A'}<br>
+                    <strong>Attendant:</strong> ${ticket.attendant || 'N/A'}<br>
+                    <strong>Vehicle:</strong> ${ticket.vehicle || 'N/A'}<br>
+                    <strong>Net Weight:</strong> ${ticket.netWeight} kg<br>
+                    <strong>Material:</strong> ${ticket.material || 'N/A'}<br>
+                    <strong>Source:</strong> ${ticket.sourceFile}
+                    ${isMatched && ticket.pdfReference !== ticket.reference ?
+                        `<br><strong>PDF Ref:</strong> ${ticket.pdfReference}` : ''}
+                    ${!isMatched ? '<br><strong>Issue:</strong> <span style="color: var(--error-color);">Missing PDF Image</span>' : ''}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function displayCsvPdfPreview() {
+            const csvPreview = document.getElementById('csvPdfPreview');
+            const headers = [
+                'Ticket Number', 'Status', 'Attendant', 'Entry Date', 'Entry Time', 'Exit Date', 'Exit Time',
+                'Vehicle', 'License', 'Reference', 'Note', 'Gross (kg)', 'Tare (kg)', 'Net (kg)',
+                'Material', 'Image File', 'Match Quality', 'Confidence', 'PDF Reference', 'Source File'
+            ];
+
+            let csvContent = '<table><thead><tr>';
+            headers.forEach(header => {
+                csvContent += `<th>${header}</th>`;
+            });
+            csvContent += '</tr></thead><tbody>';
+
+            csvPdfProcessedData.matchedTickets.slice(0, 50).forEach(ticket => {
+                csvContent += '<tr>';
+                csvContent += `<td><strong>${ticket.ticketNumber}</strong></td>`;
+                csvContent += `<td><span class="status-badge status-${ticket.status.toLowerCase()}">${ticket.status}</span></td>`;
+                csvContent += `<td>${ticket.attendant}</td>`;
+                csvContent += `<td>${ticket.entryDate}</td>`;
+                csvContent += `<td>${ticket.entryTime}</td>`;
+                csvContent += `<td>${ticket.exitDate}</td>`;
+                csvContent += `<td>${ticket.exitTime}</td>`;
+                csvContent += `<td>${ticket.vehicle}</td>`;
+                csvContent += `<td>${ticket.license}</td>`;
+                csvContent += `<td><strong>${ticket.reference}</strong></td>`;
+                csvContent += `<td>${ticket.note}</td>`;
+                csvContent += `<td>${ticket.grossWeight}</td>`;
+                csvContent += `<td>${ticket.tareWeight}</td>`;
+                csvContent += `<td><strong>${ticket.netWeight}</strong></td>`;
+                csvContent += `<td>${ticket.material}</td>`;
+                csvContent += `<td>${ticket.imagePath}</td>`;
+                csvContent += `<td>${ticket.matchQuality ? ticket.matchQuality.toFixed(3) : '1.000'}</td>`;
+                csvContent += `<td>${ticket.confidence ? ticket.confidence.toFixed(3) : '1.000'}</td>`;
+                csvContent += `<td>${ticket.pdfReference || ''}</td>`;
+                csvContent += `<td><small>${ticket.sourceFile}</small></td>`;
+                csvContent += '</tr>';
+            });
+
+            if (csvPdfProcessedData.matchedTickets.length > 50) {
+                csvContent += `<tr><td colspan="${headers.length}" style="text-align: center; font-style: italic; background-color: var(--gray-50); padding: 1rem;">
+                    ... and ${csvPdfProcessedData.matchedTickets.length - 50} more tickets (${csvPdfProcessedData.matchedTickets.length} total)
+                </td></tr>`;
+            }
+
+            csvContent += '</tbody></table>';
+            csvPreview.innerHTML = csvContent;
+        }
+
+        // CSV-PDF Download Functions
+        function downloadStructuredCSV() {
+            const headers = [
+                'Ticket Number', 'Status', 'Attendant', 'Entry Date', 'Entry Time', 'Exit Date', 'Exit Time',
+                'Vehicle', 'License', 'Reference', 'Note', 'Gross (kg)', 'Tare (kg)', 'Net (kg)',
+                'Material', 'Image File', 'Match Quality', 'Confidence', 'PDF Reference', 'Source File'
+            ];
+
+            let csvContent = headers.join(',') + '\n';
+
+            csvPdfProcessedData.matchedTickets.forEach(ticket => {
+                const row = [
+                    ticket.ticketNumber,
+                    `"${ticket.status}"`,
+                    `"${ticket.attendant}"`,
+                    `"${ticket.entryDate}"`,
+                    `"${ticket.entryTime}"`,
+                    `"${ticket.exitDate}"`,
+                    `"${ticket.exitTime}"`,
+                    `"${ticket.vehicle}"`,
+                    `"${ticket.license}"`,
+                    `"${ticket.reference}"`,
+                    `"${ticket.note}"`,
+                    ticket.grossWeight,
+                    ticket.tareWeight,
+                    ticket.netWeight,
+                    `"${ticket.material}"`,
+                    ticket.imagePath,
+                    ticket.matchQuality ? ticket.matchQuality.toFixed(3) : '1.000',
+                    ticket.confidence ? ticket.confidence.toFixed(3) : '1.000',
+                    `"${ticket.pdfReference || ''}"`,
+                    `"${ticket.sourceFile}"`
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            downloadBlob(csvContent, 'enhanced_csv_pdf_tickets_comprehensive.csv', 'text/csv');
+            logDebug(`📊 Downloaded structured CSV with ${csvPdfProcessedData.matchedTickets.length} tickets`);
+        }
+
+        async function downloadAllImages() {
+            if (typeof JSZip === 'undefined') {
+                showAlert('JSZip library not loaded. Cannot create ZIP file.', 'error');
+                return;
+            }
+
+            const zip = new JSZip();
+
+            csvPdfProcessedData.matchedTickets.forEach(ticket => {
+                const folder = zip.folder(ticket.status);
+                folder.file(ticket.imagePath, ticket.imageBlob);
+            });
+
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            downloadBlob(zipBlob, 'all_ticket_images_enhanced.zip', 'application/zip');
+            logDebug(`🖼️ Downloaded ZIP with ${csvPdfProcessedData.matchedTickets.length} ticket images`);
+        }
+
+        async function downloadByReference() {
+            if (typeof JSZip === 'undefined') {
+                showAlert('JSZip library not loaded. Cannot create ZIP file.', 'error');
+                return;
+            }
+
+            const zip = new JSZip();
+
+            Object.entries(csvPdfProcessedData.referenceGroups).forEach(([reference, tickets]) => {
+                const folderName = reference.replace(/[^a-zA-Z0-9]/g, '_');
+                const folder = zip.folder(folderName);
+
+                tickets.forEach(ticket => {
+                    folder.file(ticket.imagePath, ticket.imageBlob);
+                });
+
+                // Add summary file
+                const summary = tickets.map(t =>
+                    `Ticket: ${t.ticketNumber}, Status: ${t.status}, Weight: ${t.netWeight}kg, Vehicle: ${t.vehicle}`
+                ).join('\n');
+                folder.file('_summary.txt', summary);
+            });
+
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            downloadBlob(zipBlob, 'tickets_by_reference_enhanced.zip', 'application/zip');
+            logDebug(`📁 Downloaded reference groups ZIP with ${Object.keys(csvPdfProcessedData.referenceGroups).length} groups`);
+        }
+
+        function downloadValidationReport() {
+            const timestamp = new Date().toLocaleString();
+            let report = `Enhanced CSV-PDF Validation Report\n`;
+            report += `Generated: ${timestamp}\n`;
+            report += `System: Enhanced Processor v3.0\n\n`;
+
+            report += `=== SUMMARY ===\n`;
+            report += `Total File Pairs Processed: ${csvPdfFilePairs.filter(p => p.status === 'complete').length}\n`;
+            report += `Total CSV Tickets: ${csvPdfProcessedData.csvTickets.length}\n`;
+            report += `Total PDF Images: ${csvPdfProcessedData.pdfImages.length}\n`;
+            report += `Successfully Matched: ${csvPdfProcessedData.matchedTickets.length}\n`;
+            report += `Unmatched CSV: ${csvPdfProcessedData.unmatchedCSV.length}\n`;
+            report += `Unmatched PDF: ${csvPdfProcessedData.unmatchedPDF.length}\n`;
+            report += `Reference Groups: ${Object.keys(csvPdfProcessedData.referenceGroups).length}\n\n`;
+
+            report += `=== STATUS BREAKDOWN ===\n`;
+            report += `REPRINT Tickets: ${csvPdfProcessedData.reprintCount}\n`;
+            report += `VOID Tickets: ${csvPdfProcessedData.voidCount}\n`;
+            report += `ORIGINAL Tickets: ${csvPdfProcessedData.originalCount}\n\n`;
+
+            report += `=== VALIDATION RESULTS ===\n`;
+            csvPdfProcessedData.validationResults.forEach((result, index) => {
+                report += `${index + 1}. ${result.message}\n`;
+            });
+
+            if (csvPdfProcessedData.unmatchedCSV.length > 0) {
+                report += `\n=== UNMATCHED CSV TICKETS ===\n`;
+                csvPdfProcessedData.unmatchedCSV.forEach(ticket => {
+                    report += `- Ticket #${ticket.ticketNumber} (${ticket.status}) - ${ticket.sourceFile}\n`;
+                });
+            }
+
+            if (csvPdfProcessedData.unmatchedPDF.length > 0) {
+                report += `\n=== UNMATCHED PDF IMAGES ===\n`;
+                csvPdfProcessedData.unmatchedPDF.forEach(image => {
+                    report += `- Ticket #${image.ticketNumber} - ${image.sourceFile} (Page: ${image.pageNumber})\n`;
+                });
+            }
+
+            if (Object.keys(csvPdfProcessedData.referenceGroups).length > 0) {
+                report += `\n=== REFERENCE GROUPS ===\n`;
+                Object.entries(csvPdfProcessedData.referenceGroups).forEach(([ref, tickets]) => {
+                    report += `${ref}: ${tickets.length} tickets\n`;
+                    tickets.forEach(t => {
+                        report += `  - Ticket #${t.ticketNumber} (${t.status})\n`;
+                    });
+                });
+            }
+
+            report += `\n=== PROCESSING LOG ===\n`;
+            report += debugLog.replace(/<br\/>/g, '\n').replace(/<[^>]*>/g, '');
+
+            downloadBlob(report, 'enhanced_csv_pdf_validation_report.txt', 'text/plain');
+            logDebug('📋 Downloaded comprehensive validation report');
+        }
+
+        // UTILITY FUNCTIONS
+        function getValidationIcon(type) {
+            switch (type) {
+                case 'match': return '✅';
+                case 'missing_pdf': return '📄❌';
+                case 'missing_csv': return '🖼️❌';
+                case 'match_failed': return '⚠️';
+                default: return '📋';
+            }
+        }
+
+        function getValidationIconClass(type) {
+            switch (type) {
+                case 'match': return 'validation-success';
+                case 'missing_pdf': return 'validation-error';
+                case 'missing_csv': return 'validation-warning';
+                case 'match_failed': return 'validation-warning';
+                default: return '';
+            }
+        }
+
+        function showSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.remove('hidden');
+                section.classList.add('fade-in');
+            }
+        }
+
+        function animateNumberChange(element, targetValue) {
+            if (!element) return;
+
+            const currentValue = parseInt(element.textContent) || 0;
+            const difference = targetValue - currentValue;
+            const duration = 1000;
+            const steps = 30;
+            const increment = difference / steps;
+            let current = currentValue;
+
+            if (difference === 0) return;
+
+            const timer = setInterval(() => {
+                current += increment;
+                element.textContent = Math.round(current);
+
+                if (Math.abs(current - targetValue) < Math.abs(increment)) {
+                    element.textContent = targetValue;
+                    clearInterval(timer);
+                }
+            }, duration / steps);
+        }
+
+        function showAlert(message, type = 'info') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <strong>${type === 'error' ? '❌' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️'}</strong>
+                ${message}
+            `;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.style.maxWidth = '400px';
+            alert.style.borderRadius = '12px';
+            alert.style.boxShadow = 'var(--shadow-lg)';
+
+            document.body.appendChild(alert);
+
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateX(100%)';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsText(file);
+            });
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function downloadBlob(content, filename, mimeType) {
+            const blob = content instanceof Blob ? content : new Blob([content], { type: `${mimeType};charset=utf-8;` });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Enhanced error handling and logging
+        window.addEventListener('error', function(event) {
+            logDebug(`❌ JavaScript Error: ${event.error.message}`);
+            console.error('Global error:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            logDebug(`❌ Unhandled Promise Rejection: ${event.reason}`);
+            console.error('Unhandled promise rejection:', event.reason);
+        });
+
+        // Performance monitoring
+        function logPerformance(operation, startTime) {
+            const endTime = performance.now();
+            const duration = (endTime - startTime).toFixed(2);
+            logDebug(`⏱️ ${operation} completed in ${duration}ms`);
+        }
+
+        // Initialize tooltips and enhanced UI interactions
+        function initializeEnhancedUI() {
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(event) {
+                if (event.ctrlKey || event.metaKey) {
+                    switch (event.key) {
+                        case 'u':
+                            event.preventDefault();
+                            if (currentMode === 'multi-csv') {
+                                document.getElementById('multiCsvFileInput').click();
+                            } else {
+                                addCsvPdfFileRow();
+                            }
+                            break;
+                        case 'Enter':
+                            event.preventDefault();
+                            if (currentMode === 'multi-csv') {
+                                if (!document.getElementById('multiCsvProcessBtn').disabled) {
+                                    processMultipleCSVs();
+                                }
+                            } else {
+                                if (!document.getElementById('csvPdfProcessBtn').disabled) {
+                                    processCsvPdfPairs();
+                                }
+                            }
+                            break;
+                        case 'Escape':
+                            event.preventDefault();
+                            if (currentMode === 'multi-csv') {
+                                clearMultiCsvFiles();
+                            } else {
+                                clearCsvPdfFiles();
+                            }
+                            break;
+                    }
+                }
+            });
+
+            // Add smooth scrolling to sections
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Add intersection observer for fade-in animations
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.card').forEach(card => {
+                observer.observe(card);
+            });
+
+            logDebug('🎨 Enhanced UI features initialized');
+        }
+
+        // Accessibility enhancements
+        function initializeAccessibility() {
+            // Add ARIA labels and roles
+            document.querySelectorAll('.btn').forEach(btn => {
+                if (!btn.getAttribute('aria-label')) {
+                    btn.setAttribute('aria-label', btn.textContent.trim());
+                }
+            });
+
+            // Add focus management
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Tab') {
+                    document.body.classList.add('keyboard-navigation');
+                }
+            });
+
+            document.addEventListener('mousedown', function() {
+                document.body.classList.remove('keyboard-navigation');
+            });
+
+            // Add skip links
+            const skipLink = document.createElement('a');
+            skipLink.href = '#main-content';
+            skipLink.textContent = 'Skip to main content';
+            skipLink.className = 'skip-link';
+            skipLink.style.cssText = `
+                position: absolute;
+                top: -40px;
+                left: 6px;
+                background: var(--primary-color);
+                color: white;
+                padding: 8px;
+                text-decoration: none;
+                border-radius: 4px;
+                z-index: 1000;
+                transition: top 0.3s;
+            `;
+            skipLink.addEventListener('focus', () => {
+                skipLink.style.top = '6px';
+            });
+            skipLink.addEventListener('blur', () => {
+                skipLink.style.top = '-40px';
+            });
+
+            document.body.insertBefore(skipLink, document.body.firstChild);
+
+            logDebug('♿ Accessibility features initialized');
+        }
+
+        // Initialize everything when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEnhancedUI();
+            initializeAccessibility();
+            
+            // Add main content ID for skip link
+            const container = document.querySelector('.container');
+            if (container) {
+                container.id = 'main-content';
+            }
+
+            logDebug('🚀 Enhanced Multi-Format Ticket Processor fully loaded and ready!');
+            
+            // Show welcome message
+            setTimeout(() => {
+                showAlert('Welcome to the Enhanced Multi-Format Ticket Processor! Choose your processing mode above to get started.', 'info');
+            }, 1000);
+        });
+
+        // Add CSS for keyboard navigation
+        const keyboardNavigationCSS = `
+            .keyboard-navigation *:focus {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
+            }
+            
+            .skip-link:focus {
+                top: 6px !important;
+            }
+        `;
+        
+        const style = document.createElement('style');
+        style.textContent = keyboardNavigationCSS;
+        document.head.appendChild(style);
+
+        // Service Worker registration for offline support (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // Uncomment if you want to add offline support
+                // navigator.serviceWorker.register('/sw.js')
+                //     .then(registration => logDebug('SW registered: ', registration))
+                //     .catch(registrationError => logDebug('SW registration failed: ', registrationError));
+            });
+        }
+    </script>
+</body>
+</html>

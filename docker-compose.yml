@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ticketapp
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ticketapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./volumes/batches:/data/batches
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://ticketapp:password@postgres:5432/ticketapp
+      - REDIS_URL=redis://redis:6379
+      - UPLOAD_PATH=/data/batches
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,12 +1,11 @@
 import re
 from typing import List, Optional, Tuple, Dict, Any
 from uuid import UUID
-from datetime import date
 
 from sqlmodel import Session, select, and_
 
 from backend.models.client import (
-    Client, ClientReference, ClientAssignmentResult
+    Client, ClientReference
 )
 from backend.utils.fuzzy_utils import FuzzyMatchUtils
 
@@ -67,7 +66,7 @@ class ReferenceMatcherService:
                 select(Client).where(
                     and_(
                         Client.name.ilike('%TOPPS%'),
-                        Client.active == True
+                        Client.active
                     )
                 )
             ).first()
@@ -88,8 +87,8 @@ class ReferenceMatcherService:
             .join(Client, ClientReference.client_id == Client.id)
             .where(
                 and_(
-                    ClientReference.active == True,
-                    Client.active == True
+                    ClientReference.active,
+                    Client.active
                 )
             )
             .order_by(ClientReference.priority.asc())
@@ -301,8 +300,8 @@ class ReferenceMatcherService:
             .join(Client, ClientReference.client_id == Client.id)
             .where(
                 and_(
-                    ClientReference.active == True,
-                    Client.active == True
+                    ClientReference.active,
+                    Client.active
                 )
             )
             .order_by(ClientReference.priority.asc())
@@ -381,8 +380,8 @@ class ReferenceMatcherService:
         # Get existing patterns
         query = select(ClientReference).join(Client, ClientReference.client_id == Client.id).where(
             and_(
-                ClientReference.active == True,
-                Client.active == True
+                ClientReference.active,
+                Client.active
             )
         )
         

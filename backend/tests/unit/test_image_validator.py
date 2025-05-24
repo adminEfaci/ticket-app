@@ -1,6 +1,5 @@
 import pytest
 from PIL import Image, ImageDraw
-import numpy as np
 from unittest.mock import Mock, patch
 
 from backend.services.image_validator import ImageValidator

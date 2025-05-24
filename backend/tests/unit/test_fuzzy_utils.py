@@ -1,5 +1,4 @@
-import pytest
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from backend.utils.fuzzy_utils import FuzzyMatchUtils
 
 

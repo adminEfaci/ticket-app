@@ -1,11 +1,11 @@
 import pytest
-from datetime import date, datetime
+from datetime import date
 from uuid import uuid4
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock
 
 from backend.models.ticket import Ticket, TicketCreate, TicketUpdate, TicketErrorLog
 from backend.models.batch import ProcessingBatch
-from backend.models.user import User, UserRole
+from backend.models.user import UserRole
 from backend.services.ticket_service import TicketService
 
 
@@ -70,7 +70,7 @@ class TestTicketService:
         mock_session.commit = Mock()
         mock_session.refresh = Mock()
         
-        result = ticket_service.create_ticket(ticket_data)
+        ticket_service.create_ticket(ticket_data)
         
         assert mock_session.add.called
         assert mock_session.commit.called
@@ -164,7 +164,7 @@ class TestTicketService:
         
         user_id = str(uuid4())
         user_role = UserRole.ADMIN
-        result = ticket_service.update_ticket(test_ticket.id, update_data, user_id, user_role)
+        ticket_service.update_ticket(test_ticket.id, update_data, user_id, user_role)
         
         assert mock_session.commit.called
         assert test_ticket.status == "VOID"

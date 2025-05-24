@@ -2,10 +2,8 @@ import pytest
 import tempfile
 import os
 from pathlib import Path
-from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
-import io
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from main import app
 from backend.models.batch import ProcessingBatch, BatchStatus
@@ -107,13 +105,13 @@ class TestUploadIntegrationSimple:
             xls_file.flush()
             
             # Test file extension validation
-            assert validation_service.validate_xls_extension("test.xls") == True
-            assert validation_service.validate_xls_extension("test.xlsx") == False
-            assert validation_service.validate_xls_extension("test.txt") == False
+            assert validation_service.validate_xls_extension("test.xls")
+            assert not validation_service.validate_xls_extension("test.xlsx")
+            assert not validation_service.validate_xls_extension("test.txt")
             
             # Test file size validation (should pass for small test file)
             file_size = os.path.getsize(xls_file.name)
-            assert validation_service.validate_file_size(file_size) == True
+            assert validation_service.validate_file_size(file_size)
             
             # Clean up
             os.unlink(xls_file.name)
@@ -124,12 +122,12 @@ class TestUploadIntegrationSimple:
             pdf_file.flush()
             
             # Test file extension validation
-            assert validation_service.validate_pdf_extension("test.pdf") == True
-            assert validation_service.validate_pdf_extension("test.txt") == False
+            assert validation_service.validate_pdf_extension("test.pdf")
+            assert not validation_service.validate_pdf_extension("test.txt")
             
             # Test file size validation (should pass for small test file)
             file_size = os.path.getsize(pdf_file.name)
-            assert validation_service.validate_file_size(file_size) == True
+            assert validation_service.validate_file_size(file_size)
             
             # Clean up
             os.unlink(pdf_file.name)
@@ -203,7 +201,6 @@ class TestUploadIntegrationSimple:
     async def test_batch_model_validation(self):
         """Test batch model creation and validation"""
         
-        from backend.models.batch import ProcessingBatch, BatchStatus
         
         # Test valid batch creation
         batch = ProcessingBatch(
@@ -234,11 +231,11 @@ class TestUploadIntegrationSimple:
         validation_service = ValidationService()
         
         # Test matching filenames
-        assert validation_service.validate_filename_pair_match("document1.xls", "document1.pdf") == True
-        assert validation_service.validate_filename_pair_match("Document1.XLS", "document1.PDF") == True
+        assert validation_service.validate_filename_pair_match("document1.xls", "document1.pdf")
+        assert validation_service.validate_filename_pair_match("Document1.XLS", "document1.PDF")
         
         # Test non-matching filenames
-        assert validation_service.validate_filename_pair_match("document1.xls", "document2.pdf") == False
+        assert not validation_service.validate_filename_pair_match("document1.xls", "document2.pdf")
         
         # Test similarity threshold
         similarity = validation_service.calculate_filename_similarity("document1.xls", "document1.pdf")
@@ -251,7 +248,6 @@ class TestUploadIntegrationSimple:
     async def test_user_role_validation(self):
         """Test user role enum validation"""
         
-        from backend.models.user import UserRole
         
         # Test valid roles
         assert UserRole.CLIENT == "client"

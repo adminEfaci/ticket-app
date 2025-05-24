@@ -1,10 +1,9 @@
 import pytest
-from datetime import date, datetime
+from datetime import date
 from uuid import uuid4
-from unittest.mock import Mock, MagicMock, patch
 
 from backend.models.client import (
-    Client, ClientCreate, ClientRead, ClientUpdate,
+    Client, ClientCreate, ClientUpdate,
     ClientReference, ClientReferenceCreate,
     ClientRate, ClientRateCreate,
     InvoiceFormat

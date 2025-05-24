@@ -1,7 +1,6 @@
-import pytest
 from datetime import datetime, date
 from uuid import uuid4
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 from backend.services.match_engine import (
     TicketMatchEngine, MatchScore, MatchCandidate

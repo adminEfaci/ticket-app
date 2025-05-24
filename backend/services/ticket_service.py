@@ -204,7 +204,7 @@ class TicketService:
         billable_tickets = self.db.exec(
             select(func.count(Ticket.id)).where(
                 Ticket.batch_id == batch_id,
-                Ticket.is_billable == True
+                Ticket.is_billable
             )
         ).first() or 0
         

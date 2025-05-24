@@ -1,4 +1,3 @@
-import os
 import xlrd
 import PyPDF2
 from pathlib import Path

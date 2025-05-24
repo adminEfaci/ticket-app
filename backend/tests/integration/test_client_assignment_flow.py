@@ -1,5 +1,4 @@
 import pytest
-from datetime import date, datetime
 from uuid import UUID
 from io import BytesIO
 import pandas as pd
@@ -8,11 +7,10 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from main import app
-from backend.core.database import get_session, create_db_and_tables
+from backend.core.database import get_session
 from backend.models.user import User, UserRole
-from backend.models.client import Client, ClientReference, ClientRate, InvoiceFormat
+from backend.models.client import Client, InvoiceFormat
 from backend.models.ticket import Ticket
-from backend.models.batch import Batch
 from backend.services.auth_service import get_password_hash
 
 

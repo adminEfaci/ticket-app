@@ -1,7 +1,6 @@
-import pytest
 from uuid import uuid4
-from unittest.mock import Mock, MagicMock, patch
-from sqlmodel import Session, select
+from unittest.mock import Mock, patch
+from sqlmodel import Session
 from backend.services.batch_service import BatchService
 from backend.models.batch import ProcessingBatch, ProcessingBatchUpdate, BatchStatus
 from backend.models.user import UserRole

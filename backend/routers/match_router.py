@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from uuid import UUID
 
-from backend.middleware.auth_middleware import get_current_user, staff_required
-from backend.models.user import User
+from backend.middleware.auth_middleware import staff_required
 from backend.models.match_result import (
-    MatchResultRead, MatchResultSummary, MatchDecision
+    MatchResultRead, MatchDecision
 )
 from backend.services.match_service import MatchService, get_match_service
-from backend.core.database import get_session
-from sqlmodel import Session
 
 
 router = APIRouter(prefix="/match", tags=["matching"])

@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from uuid import UUID
 from datetime import date
 from pathlib import Path
@@ -8,7 +8,6 @@ from sqlmodel import Session
 
 from backend.middleware.auth_middleware import get_current_user, admin_required
 from backend.core.database import get_session
-from backend.models.user import User
 from backend.models.client import (
     ClientCreate, ClientRead, ClientUpdate,
     ClientReferenceCreate, ClientReferenceRead, ClientReferenceUpdate,

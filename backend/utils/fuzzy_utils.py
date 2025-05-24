@@ -1,5 +1,5 @@
 import re
-from typing import List, Tuple, Optional
+from typing import Tuple
 from difflib import SequenceMatcher
 
 
@@ -251,7 +251,7 @@ class FuzzyMatchUtils:
             return False, 0.0
         
         # Convert to dates if they're datetime objects
-        from datetime import date, datetime
+        from datetime import datetime
         
         if isinstance(date1, datetime):
             date1 = date1.date()

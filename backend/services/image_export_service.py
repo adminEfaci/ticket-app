@@ -1,6 +1,5 @@
-import os
 from pathlib import Path
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Dict, Any
 from PIL import Image
 import logging
 

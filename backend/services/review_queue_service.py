@@ -1,11 +1,10 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import timedelta
 from ..utils.datetime_utils import utcnow_naive
 
 from sqlmodel import Session, select, and_
 from backend.models.match_result import MatchResult, MatchResultRead
-from backend.models.user import User
 
 
 class ReviewQueueService:
@@ -30,7 +29,7 @@ class ReviewQueueService:
         """
         query = select(MatchResult).where(
             and_(
-                MatchResult.reviewed == False,
+                not MatchResult.reviewed,
                 MatchResult.confidence >= 60.0,
                 MatchResult.confidence < 85.0
             )
@@ -61,7 +60,7 @@ class ReviewQueueService:
         """Get statistics about the review queue"""
         query = select(MatchResult).where(
             and_(
-                MatchResult.reviewed == False,
+                not MatchResult.reviewed,
                 MatchResult.confidence >= 60.0,
                 MatchResult.confidence < 85.0
             )
@@ -131,7 +130,7 @@ class ReviewQueueService:
         active_query = select(MatchResult).where(
             and_(
                 MatchResult.reviewed_by == reviewer_id,
-                MatchResult.reviewed == False
+                not MatchResult.reviewed
             )
         )
         active_assignments = list(self.session.exec(active_query).all())
@@ -141,7 +140,7 @@ class ReviewQueueService:
         completed_query = select(MatchResult).where(
             and_(
                 MatchResult.reviewed_by == reviewer_id,
-                MatchResult.reviewed == True,
+                MatchResult.reviewed,
                 MatchResult.reviewed_at >= week_ago
             )
         )
@@ -194,7 +193,7 @@ class ReviewQueueService:
         
         query = select(MatchResult).where(
             and_(
-                MatchResult.reviewed == False,
+                not MatchResult.reviewed,
                 MatchResult.confidence >= 60.0,
                 MatchResult.confidence < 85.0,
                 MatchResult.created_at <= threshold_time

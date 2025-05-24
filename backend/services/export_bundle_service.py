@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import date
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional
 from uuid import UUID
 
 from sqlmodel import Session

@@ -25,7 +25,7 @@ class TestStorageService:
         shutil.rmtree(new_temp_dir)  # Remove it first
         
         # Create service - should recreate directory
-        service = StorageService(new_temp_dir)
+        StorageService(new_temp_dir)
         assert Path(new_temp_dir).exists()
         
         # Clean up

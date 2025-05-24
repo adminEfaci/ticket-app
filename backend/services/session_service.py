@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import timedelta
 from ..utils.datetime_utils import utcnow_naive
 from uuid import UUID
 from sqlmodel import Session, select

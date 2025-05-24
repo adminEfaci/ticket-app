@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, date
 from uuid import uuid4
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
+from unittest.mock import Mock, AsyncMock
 
 from backend.services.match_service import MatchService
 from backend.services.match_engine import TicketMatchEngine
@@ -163,7 +163,7 @@ class TestMatchFlowIntegration:
         # Test accepting a match
         decision = MatchDecision(accepted=True, reason="Manual verification confirmed")
         
-        result = await match_service.accept_match(
+        await match_service.accept_match(
             match_id=match_id,
             user_id=user_id,
             decision=decision

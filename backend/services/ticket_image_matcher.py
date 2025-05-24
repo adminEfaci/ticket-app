@@ -6,8 +6,7 @@ from uuid import UUID
 import logging
 from pathlib import Path
 
-from ..models.ticket import TicketDTO, TicketCreate, TicketUpdate
-from ..models.ticket_image import TicketImage
+from ..models.ticket import TicketDTO, TicketUpdate
 from ..services.pdf_extraction_service import PDFExtractionService
 from ..services.storage_service import StorageService
 from ..utils.image_utils import ImageUtils
@@ -55,7 +54,7 @@ class TicketImageMatcher:
             pdf_images = await self._extract_pdf_images(pdf_path, batch_id)
             
             # Create ticket lookup by number
-            ticket_lookup = {t.ticket_number: t for t in tickets if t.ticket_number}
+            {t.ticket_number: t for t in tickets if t.ticket_number}
             
             # Create image lookup by detected ticket number
             image_lookup = {}

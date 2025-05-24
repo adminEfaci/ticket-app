@@ -1,6 +1,4 @@
-import json
-from datetime import datetime
-from typing import List, Dict, Tuple, Optional, Any
+from typing import List, Dict, Tuple, Any
 from uuid import UUID
 
 from backend.models.ticket import TicketRead

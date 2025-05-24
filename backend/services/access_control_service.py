@@ -189,7 +189,7 @@ class AccessControlService:
                 and_(
                     ClientUserAccess.user_id == user_id,
                     ClientUserAccess.client_id == client_id,
-                    ClientUserAccess.active == True
+                    ClientUserAccess.active
                 )
             )
         ).first()
@@ -254,7 +254,7 @@ class AccessControlService:
                 and_(
                     ClientUserAccess.user_id == user_id,
                     ClientUserAccess.client_id == client_id,
-                    ClientUserAccess.active == True
+                    ClientUserAccess.active
                 )
             )
         ).first()
@@ -327,7 +327,7 @@ class AccessControlService:
         # For admin/manager roles, return all active clients
         if user.role in [UserRole.ADMIN, UserRole.MANAGER]:
             clients = self.session.exec(
-                select(Client).where(Client.active == True)
+                select(Client).where(Client.active)
             ).all()
             
             return [
@@ -346,8 +346,8 @@ class AccessControlService:
         ).where(
             and_(
                 ClientUserAccess.user_id == user_id,
-                ClientUserAccess.active == True,
-                Client.active == True,
+                ClientUserAccess.active,
+                Client.active,
                 ClientUserAccess.expires_at.is_(None) | (ClientUserAccess.expires_at > utcnow_naive())
             )
         )
@@ -383,8 +383,8 @@ class AccessControlService:
         ).where(
             and_(
                 ClientUserAccess.client_id == client_id,
-                ClientUserAccess.active == True,
-                User.is_active == True,
+                ClientUserAccess.active,
+                User.is_active,
                 ClientUserAccess.expires_at.is_(None) | (ClientUserAccess.expires_at > utcnow_naive())
             )
         )
@@ -396,7 +396,7 @@ class AccessControlService:
             select(User).where(
                 and_(
                     User.role.in_([UserRole.ADMIN, UserRole.MANAGER]),
-                    User.is_active == True
+                    User.is_active
                 )
             )
         ).all()
@@ -447,7 +447,7 @@ class AccessControlService:
         expired_access = self.session.exec(
             select(ClientUserAccess).where(
                 and_(
-                    ClientUserAccess.active == True,
+                    ClientUserAccess.active,
                     ClientUserAccess.expires_at < now
                 )
             )
@@ -487,7 +487,7 @@ class AccessControlService:
                 and_(
                     ClientUserAccess.user_id == user_id,
                     ClientUserAccess.client_id == client_id,
-                    ClientUserAccess.active == True,
+                    ClientUserAccess.active,
                     ClientUserAccess.expires_at.is_(None) | (ClientUserAccess.expires_at > utcnow_naive())
                 )
             )
@@ -505,7 +505,7 @@ class AccessControlService:
                 and_(
                     ClientUserAccess.user_id == user_id,
                     ClientUserAccess.client_id == client_id,
-                    ClientUserAccess.active == True,
+                    ClientUserAccess.active,
                     ClientUserAccess.expires_at.is_(None) | (ClientUserAccess.expires_at > utcnow_naive())
                 )
             )

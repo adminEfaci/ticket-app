@@ -1,6 +1,6 @@
 import hashlib
 import aiofiles
-from typing import BinaryIO, Union
+from typing import Union
 from pathlib import Path
 
 async def calculate_file_hash(file_path: Union[str, Path]) -> str:

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Tuple, Optional, Union
 from PIL import Image, ImageStat
@@ -152,7 +151,7 @@ class ImageUtils:
                 image = image.convert('L')
             
             # Convert to numpy array for processing
-            img_array = np.array(image)
+            np.array(image)
             
             # Apply histogram equalization to improve contrast
             from PIL import ImageOps
@@ -236,7 +235,7 @@ class ImageUtils:
             
             # Find bounding box of high-gradient areas
             edge_pixels_x = np.where(grad_x > threshold)
-            edge_pixels_y = np.where(grad_y > threshold)
+            np.where(grad_y > threshold)
             
             if len(edge_pixels_x[0]) > 0 and len(edge_pixels_x[1]) > 0:
                 top = max(0, np.min(edge_pixels_x[0]) - 10)

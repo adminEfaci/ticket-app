@@ -1,7 +1,5 @@
 import pytest
-import tempfile
 import xlrd
-from pathlib import Path
 from unittest.mock import Mock, patch
 from datetime import date
 

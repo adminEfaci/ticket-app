@@ -1,13 +1,12 @@
 import pytest
-from uuid import uuid4, UUID
-from unittest.mock import Mock, MagicMock
+from uuid import uuid4
+from unittest.mock import Mock
 from backend.utils.datetime_utils import utcnow_naive
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.services.ticket_image_service import TicketImageService
 from backend.models.ticket_image import TicketImage, TicketImageCreate, TicketImageUpdate
-from backend.models.batch import ProcessingBatch
 
 
 class TestTicketImageService:

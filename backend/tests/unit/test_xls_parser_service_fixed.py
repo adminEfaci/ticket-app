@@ -1,10 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
-from datetime import date
-import json
 
 from backend.services.xls_parser_service import XlsParserService
-from backend.models.ticket import TicketDTO
 
 class TestXlsParserServiceFixed:
     """Fixed XLS parser tests with proper mocking"""

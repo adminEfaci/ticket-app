@@ -1,7 +1,5 @@
-import os
 import aiofiles
 from pathlib import Path
-from typing import BinaryIO, Union
 from uuid import UUID
 from fastapi import UploadFile
 import shutil

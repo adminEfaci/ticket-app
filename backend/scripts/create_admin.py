@@ -64,8 +64,8 @@ def create_admin_user():
             
             print(f"\n✅ Admin user '{username}' created successfully!")
             print(f"   Email: {email}")
-            print(f"   Role: ADMIN")
-            print(f"   Active: Yes")
+            print("   Role: ADMIN")
+            print("   Active: Yes")
             print("\nYou can now login with these credentials.")
             return True
             

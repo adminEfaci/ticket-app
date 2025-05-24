@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Union
 from PIL import Image
 from pdf2image import convert_from_path
-import io
 import logging
 
 from ..utils.image_utils import ImageUtils

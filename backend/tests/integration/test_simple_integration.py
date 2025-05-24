@@ -1,11 +1,9 @@
-import pytest
 from datetime import date
 from uuid import uuid4
 
 # Test that the main components can be imported and initialized
 def test_imports():
     """Test that all Phase 3 components can be imported"""
-    from backend.models.ticket import Ticket, TicketCreate, TicketDTO, TicketErrorLog
     from backend.services.ticket_validator import TicketValidator
     from backend.services.ticket_mapper import TicketMapper
     from backend.utils.excel_utils import ExcelUtils
@@ -106,7 +104,7 @@ def test_void_ticket_validation():
     
     # Test that invalid VOID ticket (with weight) is caught at model creation
     try:
-        invalid_void = TicketCreate(
+        TicketCreate(
             batch_id=uuid4(),
             ticket_number="T002",
             reference="REF002",

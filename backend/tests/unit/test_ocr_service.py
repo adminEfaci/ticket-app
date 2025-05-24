@@ -1,8 +1,7 @@
 import pytest
 import re
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from PIL import Image
-import numpy as np
 
 from backend.services.ocr_service import OCRService
 

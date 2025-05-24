@@ -1,8 +1,7 @@
 import pytest
 import tempfile
-import os
 import shutil
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import patch
 from pathlib import Path
 from PIL import Image
 
@@ -43,7 +42,7 @@ class TestImageExportService:
     
     def test_init_creates_base_directory(self, temp_dir):
         new_path = Path(temp_dir) / "new_base"
-        service = ImageExportService(base_path=str(new_path))
+        ImageExportService(base_path=str(new_path))
         assert new_path.exists()
         assert new_path.is_dir()
     
@@ -89,7 +88,7 @@ class TestImageExportService:
             return True
         
         with patch.object(export_service.image_utils, 'generate_image_filename') as mock_gen, \
-             patch.object(export_service.image_utils, 'save_image_as_png', side_effect=mock_save_image) as mock_save:
+             patch.object(export_service.image_utils, 'save_image_as_png', side_effect=mock_save_image):
             
             expected_filename = f"unknown_ticket_page_{page_number}.png"
             mock_gen.return_value = expected_filename
@@ -311,7 +310,7 @@ class TestImageExportService:
             return True
         
         with patch.object(export_service.image_utils, 'generate_image_filename') as mock_gen, \
-             patch.object(export_service.image_utils, 'save_image_as_png', side_effect=mock_save_image) as mock_save:
+             patch.object(export_service.image_utils, 'save_image_as_png', side_effect=mock_save_image):
             
             mock_gen.side_effect = [
                 "TK-001_page_1.png",
@@ -335,7 +334,7 @@ class TestImageExportService:
             return True
         
         with patch.object(export_service.image_utils, 'generate_image_filename') as mock_gen, \
-             patch.object(export_service.image_utils, 'save_image_as_png', side_effect=mock_save_image) as mock_save:
+             patch.object(export_service.image_utils, 'save_image_as_png', side_effect=mock_save_image):
             
             mock_gen.return_value = "test.png"
             

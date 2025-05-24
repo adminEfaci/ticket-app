@@ -68,6 +68,6 @@ class TestTicketMapperSimple:
     def test_normalize_status(self, mapper):
         """Test status normalization if method exists"""
         if hasattr(mapper, '_normalize_status'):
-            result = mapper._normalize_status("complete")
+            mapper._normalize_status("complete")
             # Method exists but might return None for unknown statuses
             # This is acceptable behavior

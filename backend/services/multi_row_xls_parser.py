@@ -1,11 +1,8 @@
 """
 Parser for multi-row XLS format where each ticket spans multiple rows
 """
-import xlrd
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Union, Tuple
-from datetime import datetime, date
-import re
+from typing import List, Any, Optional, Union, Tuple
 import logging
 
 from ..utils.excel_utils import ExcelUtils

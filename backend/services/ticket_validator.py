@@ -1,5 +1,5 @@
 from typing import List, Set, Optional
-from datetime import date, datetime
+from datetime import date
 import logging
 
 from ..models.ticket import TicketCreate, TicketErrorLog

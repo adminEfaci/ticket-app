@@ -1,12 +1,10 @@
 import pytest
-import pytest_asyncio
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 from unittest.mock import Mock, MagicMock, AsyncMock, patch
 
-from backend.models.client import Client, ClientRate, ClientRateCreate, ClientRateUpdate
+from backend.models.client import Client, ClientRate, ClientRateCreate
 from backend.services.rate_service import RateService
-from backend.services.audit_service import AuditService, AuditEventType
 
 
 @pytest.fixture
@@ -54,7 +52,7 @@ class TestRateService:
             mock_session.refresh = Mock()
             
             # Call the service method
-            result = await rate_service.create_rate(
+            await rate_service.create_rate(
                 rate_data=rate_data,
                 approved_by=uuid4() if rate_data else None
             )
@@ -78,7 +76,7 @@ class TestRateService:
             mock_session.commit = Mock()
             mock_session.refresh = Mock()
             
-            result = await rate_service.create_rate(
+            await rate_service.create_rate(
                 rate_data=rate_data,
                 approved_by=admin_id,
                 auto_approve=True
@@ -90,7 +88,7 @@ class TestRateService:
     async def test_get_effective_rate(self, rate_service, test_client, mock_session):
         """Test getting effective rate for a client"""
         # Create mock rates
-        rate1 = ClientRate(
+        ClientRate(
             id=uuid4(),
             client_id=test_client.id,
             rate_per_tonne=25.00,

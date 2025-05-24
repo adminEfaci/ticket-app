@@ -4,7 +4,7 @@ from sqlmodel import Session
 import logging
 
 from ..models.ticket_image import (
-    TicketImage, TicketImageCreate, TicketImageRead, TicketImageUpdate,
+    TicketImage, TicketImageCreate, TicketImageUpdate,
     ImageExtractionResult, ImageErrorLog
 )
 from ..models.user import UserRole
@@ -113,7 +113,7 @@ class TicketImageService:
             query = self.db.query(TicketImage).filter(TicketImage.batch_id == batch_id)
             
             if valid_only:
-                query = query.filter(TicketImage.valid == True)
+                query = query.filter(TicketImage.valid)
             
             return query.order_by(TicketImage.page_number).offset(skip).limit(limit).all()
             

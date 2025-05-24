@@ -1,22 +1,13 @@
 import pytest
 import tempfile
-import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
-from fastapi import UploadFile
 import io
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from main import app
 from backend.models.batch import ProcessingBatch, BatchStatus
-from backend.services.storage_service import StorageService
-from backend.services.validation_service import ValidationService
-from backend.services.batch_service import BatchService
-from backend.services.auth_service import AuthService
-from backend.services.audit_service import AuditService
-from backend.core.database import get_session
-from backend.utils.hash_utils import calculate_file_hash, calculate_combined_hash
 
 
 @pytest.fixture
@@ -69,11 +60,11 @@ class TestUploadIntegration:
         
         # Mock dependencies
         with patch('backend.routers.upload_router.get_session', return_value=mock_session), \
-             patch('backend.routers.upload_router.get_storage_service') as mock_storage_dep, \
-             patch('backend.routers.upload_router.get_validation_service') as mock_validation_dep, \
-             patch('backend.routers.upload_router.get_batch_service') as mock_batch_dep, \
-             patch('backend.routers.upload_router.get_upload_service') as mock_upload_dep, \
-             patch('backend.middleware.auth_middleware.authenticated_required') as mock_auth_required:
+             patch('backend.routers.upload_router.get_storage_service'), \
+             patch('backend.routers.upload_router.get_validation_service'), \
+             patch('backend.routers.upload_router.get_batch_service'), \
+             patch('backend.routers.upload_router.get_upload_service'), \
+             patch('backend.middleware.auth_middleware.authenticated_required'):
             
             # Setup mocks
             mock_storage = mock_storage_cls.return_value
@@ -214,7 +205,7 @@ class TestUploadIntegration:
              patch('backend.routers.upload_router.ValidationService') as mock_validation_cls, \
              patch('backend.routers.upload_router.BatchService') as mock_batch_cls, \
              patch('backend.routers.upload_router.AuthService') as mock_auth_cls, \
-             patch('backend.routers.upload_router.AuditService') as mock_audit_cls:
+             patch('backend.routers.upload_router.AuditService'):
             
             mock_session = AsyncMock()
             mock_get_session.return_value = mock_session
@@ -223,7 +214,6 @@ class TestUploadIntegration:
             mock_validation = mock_validation_cls.return_value
             mock_batch = mock_batch_cls.return_value
             mock_auth = mock_auth_cls.return_value
-            mock_audit = mock_audit_cls.return_value
             
             # Mock auth service
             mock_auth.get_current_user.return_value = {

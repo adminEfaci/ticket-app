@@ -1,7 +1,6 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlmodel import Session, select
-from datetime import datetime
 from ..utils.datetime_utils import utcnow_naive
 import logging
 

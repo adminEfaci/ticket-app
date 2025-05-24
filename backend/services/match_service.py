@@ -1,21 +1,17 @@
 import json
-from datetime import datetime
 from ..utils.datetime_utils import utcnow_naive
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
 from sqlmodel import Session, select, and_
-from sqlalchemy.exc import IntegrityError
 from fastapi import Depends
 
 from backend.core.database import get_session
 from backend.models.match_result import (
-    MatchResult, MatchResultCreate, MatchResultRead, MatchResultUpdate, 
-    MatchResultSummary, MatchDecision
+    MatchResult, MatchResultCreate, MatchResultRead, MatchResultSummary, MatchDecision
 )
 from backend.models.ticket import Ticket
 from backend.models.ticket_image import TicketImage
-from backend.models.user import User
 from backend.services.match_engine import MatchCandidate, TicketMatchEngine
 from backend.services.audit_service import AuditService, AuditEventType
 
@@ -154,10 +150,10 @@ class MatchService:
                 conditions.append(and_(
                     MatchResult.confidence >= 60.0,
                     MatchResult.confidence < 85.0,
-                    MatchResult.reviewed == False
+                    not MatchResult.reviewed
                 ))
             else:
-                conditions.append(MatchResult.reviewed == True)
+                conditions.append(MatchResult.reviewed)
         
         if conditions:
             query = query.where(and_(*conditions))

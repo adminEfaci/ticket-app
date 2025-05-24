@@ -10,7 +10,6 @@ import re
 
 from sqlmodel import Session, select
 from ..models.client import Client, ClientCreate, ClientReference, ClientReferenceCreate, ClientRate, ClientRateCreate
-from ..models.user import User
 from datetime import date
 
 logger = logging.getLogger(__name__)
@@ -84,7 +83,7 @@ class ClientLoaderService:
         account_name = row.get('Account Name', '').strip()
         
         if not account_number or not account_name:
-            logger.warning(f"Skipping row with missing account number or name")
+            logger.warning("Skipping row with missing account number or name")
             return None
         
         # Check if client already exists by name

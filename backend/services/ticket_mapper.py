@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import date
 from uuid import UUID
 import re
 import logging

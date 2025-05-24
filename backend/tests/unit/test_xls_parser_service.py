@@ -1,11 +1,8 @@
 import pytest
-from unittest.mock import Mock, MagicMock, patch, mock_open
-from pathlib import Path
+from unittest.mock import Mock, patch
 from datetime import date, datetime
-from uuid import uuid4
 
 from backend.services.xls_parser_service import XlsParserService
-from backend.models.ticket import TicketDTO, TicketErrorLog
 
 
 class TestXlsParserService:

@@ -2,8 +2,7 @@ import csv
 import io
 import logging
 from datetime import date
-from typing import List, Dict, Any, Optional
-from pathlib import Path
+from typing import List, Dict
 
 from ..models.export import (
     ClientInvoice, InvoiceLineItem, WeeklyManifest,
@@ -126,7 +125,7 @@ class InvoiceGeneratorService:
         output = io.StringIO()
         
         # Write header info
-        output.write(f"INVOICE\n")
+        output.write("INVOICE\n")
         output.write(f"Client: {invoice.client_name}\n")
         output.write(f"Client ID: {invoice.client_id}\n")
         output.write(f"Period: {invoice.week_start} to {invoice.week_end}\n")
@@ -208,7 +207,7 @@ class InvoiceGeneratorService:
         output = io.StringIO()
         
         # Write header
-        output.write(f"WEEKLY MANIFEST\n")
+        output.write("WEEKLY MANIFEST\n")
         output.write(f"Week: {manifest.week_start} to {manifest.week_end}\n")
         output.write(f"Generated: {manifest.generated_at}\n")
         output.write("\n")

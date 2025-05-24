@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from ..utils.datetime_utils import utcnow_naive
 from typing import List, Optional, Dict
 from uuid import UUID
@@ -40,7 +40,7 @@ class RateService:
             ValueError: If validation fails or overlapping rates exist
         """
         # Validate client exists
-        client = await self._get_client(rate_data.client_id)
+        await self._get_client(rate_data.client_id)
         
         # Check for overlapping rates
         await self._validate_no_overlapping_rates(

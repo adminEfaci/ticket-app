@@ -1,6 +1,6 @@
 import xlrd
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union
 from xlrd.sheet import Sheet
 import re
 from datetime import datetime, date

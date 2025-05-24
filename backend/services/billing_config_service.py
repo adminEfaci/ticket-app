@@ -1,4 +1,3 @@
-from datetime import datetime
 from ..utils.datetime_utils import utcnow_naive
 from typing import List, Optional, Dict, Any
 from uuid import UUID
@@ -6,11 +5,10 @@ import re
 import json
 
 from sqlmodel import Session, select
-from pydantic import validator
 
 from backend.core.database import get_session
 from backend.models.client import (
-    Client, ClientUpdate, ClientRead, InvoiceFormat
+    Client, ClientRead, InvoiceFormat
 )
 from backend.services.audit_service import AuditService, AuditEventType
 
@@ -201,7 +199,7 @@ class BillingConfigService:
         statement = select(Client).where(Client.invoice_format == invoice_format)
         
         if active_only:
-            statement = statement.where(Client.active == True)
+            statement = statement.where(Client.active)
         
         results = self.session.exec(statement).all()
         return [ClientRead.model_validate(client) for client in results]
@@ -224,7 +222,7 @@ class BillingConfigService:
         statement = select(Client).where(Client.invoice_frequency == frequency)
         
         if active_only:
-            statement = statement.where(Client.active == True)
+            statement = statement.where(Client.active)
         
         results = self.session.exec(statement).all()
         return [ClientRead.model_validate(client) for client in results]
@@ -244,7 +242,7 @@ class BillingConfigService:
             List of potentially overdue clients
         """
         statement = select(Client).where(
-            Client.active == True,
+            Client.active,
             Client.credit_terms_days >= days_overdue
         ).order_by(Client.credit_terms_days.desc())
         
@@ -310,7 +308,7 @@ class BillingConfigService:
         Returns:
             Summary of billing configuration statistics
         """
-        all_clients = self.session.exec(select(Client).where(Client.active == True)).all()
+        all_clients = self.session.exec(select(Client).where(Client.active)).all()
         
         if not all_clients:
             return {

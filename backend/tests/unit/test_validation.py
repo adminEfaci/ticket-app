@@ -1,5 +1,4 @@
 import pytest
-import io
 from unittest.mock import Mock, AsyncMock, patch
 from fastapi import UploadFile
 from backend.services.validation_service import ValidationService

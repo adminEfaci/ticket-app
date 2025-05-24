@@ -1,9 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from ..utils.datetime_utils import utcnow_naive
 from typing import Optional
 from sqlmodel import Session, select
 from ..core.auth import verify_password, get_password_hash, create_access_token, validate_password_strength
-from ..models.user import User, UserCreate, UserRole
+from ..models.user import User, UserCreate
 from ..models.session import Session as UserSession
 import hashlib
 

@@ -2,7 +2,6 @@ import pytest
 import json
 import zipfile
 from datetime import date, datetime
-from pathlib import Path
 from uuid import uuid4
 from io import BytesIO
 
@@ -10,7 +9,6 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from main import app
-from backend.core.database import get_session
 from backend.models.user import User, UserRole
 from backend.models.client import Client, ClientRate
 from backend.models.ticket import Ticket

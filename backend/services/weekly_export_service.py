@@ -1,9 +1,8 @@
-import json
 import logging
-from datetime import date, datetime, timedelta
-from typing import List, Dict, Any, Optional, Tuple
+from datetime import date, timedelta
+from typing import List, Dict, Optional, Tuple
 from uuid import UUID
-from sqlmodel import Session, select, and_, or_
+from sqlmodel import Session, select
 
 from ..models.ticket import Ticket
 from ..models.client import Client
@@ -65,7 +64,7 @@ class WeeklyExportService:
         """
         query = select(Ticket).where(
             Ticket.status == "REPRINT",
-            Ticket.is_billable == True,
+            Ticket.is_billable,
             Ticket.entry_date >= start_date
         )
         

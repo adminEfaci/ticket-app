@@ -1,6 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.params import Query as QueryParam
 from sqlmodel import Session
 
@@ -11,7 +11,7 @@ from ..services.upload_service import UploadService
 from ..services.storage_service import StorageService
 from ..services.validation_service import ValidationService
 from ..services.audit_service import AuditService
-from ..middleware.auth_middleware import authenticated_required, get_current_user
+from ..middleware.auth_middleware import authenticated_required
 from ..core.database import get_session
 import os
 

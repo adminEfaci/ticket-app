@@ -1,11 +1,11 @@
 import pytest
-from datetime import date, timedelta
+from datetime import date
 from uuid import uuid4
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, AsyncMock
 
 from backend.services.weekly_export_service import WeeklyExportService
 from backend.models.ticket import Ticket
-from backend.models.client import Client, ClientRate
+from backend.models.client import Client
 from backend.models.export import ExportRequest, ExportValidation
 
 

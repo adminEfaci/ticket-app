@@ -1,9 +1,7 @@
 import pytest
 import tempfile
 import os
-from pathlib import Path
-from datetime import date, datetime
-from uuid import uuid4
+from datetime import date
 import xlwt
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -148,7 +146,7 @@ class TestTicketParsingIntegration:
 
     def test_complete_parsing_flow_success(self, db_session, test_batch, sample_xls_file):
         # Initialize services
-        excel_utils = ExcelUtils()
+        ExcelUtils()
         parser_service = XLSParserService()
         mapper = TicketMapper()
         validator = TicketValidator()

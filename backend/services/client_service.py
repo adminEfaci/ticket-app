@@ -1,17 +1,14 @@
-from datetime import datetime, date
+from datetime import date
 from ..utils.datetime_utils import utcnow_naive
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, func
-from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select, and_, func
 
 from backend.core.database import get_session
 from backend.models.client import (
     Client, ClientCreate, ClientRead, ClientUpdate,
-    ClientReference, ClientReferenceCreate, ClientReferenceRead, ClientReferenceUpdate,
-    ClientRate, ClientRateCreate, ClientRateRead, ClientRateUpdate,
-    ClientHierarchy, ClientStatistics, ClientAssignmentResult
+    ClientHierarchy, ClientStatistics
 )
 from backend.models.ticket import Ticket
 from backend.services.audit_service import AuditService, AuditEventType
@@ -39,7 +36,7 @@ class ClientService:
         # Check for duplicate name
         existing = self.session.exec(
             select(Client).where(
-                and_(Client.name == client_data.name, Client.active == True)
+                and_(Client.name == client_data.name, Client.active)
             )
         ).first()
         
@@ -87,7 +84,7 @@ class ClientService:
         
         conditions = []
         if active_only:
-            conditions.append(Client.active == True)
+            conditions.append(Client.active)
         
         if parent_id is not None:
             conditions.append(Client.parent_id == parent_id)
@@ -142,7 +139,7 @@ class ClientService:
                 select(Client).where(
                     and_(
                         Client.name == update_data['name'],
-                        Client.active == True,
+                        Client.active,
                         Client.id != client_id
                     )
                 )
@@ -225,7 +222,7 @@ class ClientService:
             # Get all root clients (no parent)
             root_clients = self.session.exec(
                 select(Client).where(
-                    and_(Client.parent_id.is_(None), Client.active == True)
+                    and_(Client.parent_id.is_(None), Client.active)
                 ).order_by(Client.name)
             ).all()
             
@@ -327,7 +324,7 @@ class ClientService:
         """Get client by name"""
         client = self.session.exec(
             select(Client).where(
-                and_(Client.name == name, Client.active == True)
+                and_(Client.name == name, Client.active)
             )
         ).first()
         
@@ -340,7 +337,7 @@ class ClientService:
         clients = self.session.exec(
             select(Client).where(
                 and_(
-                    Client.active == True,
+                    Client.active,
                     Client.name.ilike(f"%{search_term}%")
                 )
             ).order_by(Client.name).limit(limit)

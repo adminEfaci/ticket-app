@@ -1,7 +1,6 @@
 import pytest
-from datetime import date
 from uuid import uuid4
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock
 
 from backend.services.reference_matcher import ReferenceMatcherService
 from backend.models.client import Client, ClientReference
@@ -150,7 +149,7 @@ class TestReferenceMatcherService:
     def test_inactive_patterns_ignored(self, matcher_service, test_clients, mock_session):
         """Test that inactive patterns are not matched"""
         # Create inactive reference
-        inactive_ref = ClientReference(
+        ClientReference(
             id=uuid4(),
             client_id=test_clients["clients"][0].id,
             pattern="INACTIVE",

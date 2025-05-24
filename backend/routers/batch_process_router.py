@@ -1,11 +1,10 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlmodel import Session
 
 from ..models.ticket import TicketRead, TicketParsingResult
-from ..models.batch import ProcessingBatch
 from ..models.user import UserRole
 from ..services.xls_parser_service import XlsParserService
 from ..services.ticket_mapper import TicketMapper
@@ -14,7 +13,7 @@ from ..services.ticket_service import TicketService
 from ..services.batch_service import BatchService
 from ..services.storage_service import StorageService
 from ..services.audit_service import AuditService
-from ..middleware.auth_middleware import authenticated_required, get_current_user
+from ..middleware.auth_middleware import authenticated_required
 from ..core.database import get_session
 import logging
 import os

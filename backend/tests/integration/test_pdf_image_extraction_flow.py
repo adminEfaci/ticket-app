@@ -1,19 +1,17 @@
 import pytest
 import tempfile
-import os
 import shutil
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from uuid import uuid4
-from PIL import Image, ImageDraw, ImageFont
-import io
+from PIL import Image, ImageDraw
 
 from backend.services.pdf_extraction_service import PDFExtractionService
 from backend.services.ocr_service import OCRService
 from backend.services.image_validator import ImageValidator
 from backend.services.image_export_service import ImageExportService
 from backend.services.ticket_image_service import TicketImageService
-from backend.models.ticket_image import TicketImageCreate, ImageExtractionResult
+from backend.models.ticket_image import TicketImageCreate
 
 
 class TestPDFImageExtractionFlow:

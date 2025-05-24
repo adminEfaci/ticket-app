@@ -1,9 +1,12 @@
 from datetime import datetime, date
 from ..utils.datetime_utils import utcnow_naive
-from typing import Optional, Literal, List, Dict, Any
+from typing import Optional, List, Any, TYPE_CHECKING
 from uuid import UUID, uuid4
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import field_validator
+
+if TYPE_CHECKING:
+    from backend.models.client import Client
 
 class TicketBase(SQLModel):
     ticket_number: str = Field(max_length=50, index=True)
@@ -142,5 +145,3 @@ class TicketErrorLog(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow_naive)
 
 
-# Forward reference import to avoid circular dependency
-from backend.models.client import Client

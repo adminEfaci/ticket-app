@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 import logging
 
-from ..middleware.auth_middleware import authenticated_required, admin_required, manager_or_admin_required
+from ..middleware.auth_middleware import authenticated_required, manager_or_admin_required
 from ..core.database import get_session
 from ..models.ticket_image import (
     TicketImageRead, TicketImageUpdate, ImageExtractionResult

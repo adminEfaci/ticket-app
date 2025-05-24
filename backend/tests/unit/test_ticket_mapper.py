@@ -1,6 +1,6 @@
 import pytest
-from datetime import date, datetime
-from uuid import uuid4, UUID
+from datetime import date
+from uuid import uuid4
 
 from backend.services.ticket_mapper import TicketMapper
 from backend.models.ticket import TicketDTO, TicketCreate

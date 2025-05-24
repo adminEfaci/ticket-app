@@ -1,14 +1,14 @@
-from .user import User, UserCreate, UserRead, UserUpdate, UserLogin, UserRole
+from .user import User, UserCreate, UserRead, UserUpdate, UserLogin, UserRole as UserRole
 from .session import Session
 from .audit_log import AuditLog
-from .batch import ProcessingBatch, ProcessingBatchCreate, ProcessingBatchRead, ProcessingBatchUpdate, BatchStatus
+from .batch import ProcessingBatch, ProcessingBatchCreate, ProcessingBatchRead, ProcessingBatchUpdate, BatchStatus as BatchStatus
 from .ticket import Ticket, TicketCreate, TicketRead, TicketUpdate, TicketDTO, TicketParsingResult, TicketErrorLog
 from .ticket_image import TicketImage, TicketImageCreate, TicketImageRead, TicketImageUpdate, ImageExtractionResult, ImageErrorLog
 from .client import (
     Client, ClientCreate, ClientRead, ClientUpdate,
     ClientReference, ClientReferenceCreate, ClientReferenceRead, ClientReferenceUpdate,
     ClientRate, ClientRateCreate, ClientRateRead, ClientRateUpdate,
-    InvoiceFormat, ClientHierarchy, ClientAssignmentResult, ClientStatistics
+    InvoiceFormat as InvoiceFormat, ClientHierarchy, ClientAssignmentResult, ClientStatistics
 )
 
 # Rebuild all Pydantic models to resolve forward references

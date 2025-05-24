@@ -1,7 +1,6 @@
-import xlrd
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Union, Tuple
-from datetime import datetime, date
+from typing import List, Dict, Optional, Union, Tuple
+from datetime import date
 from uuid import UUID
 import re
 import logging

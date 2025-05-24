@@ -2,12 +2,10 @@ import pytest
 import tempfile
 import os
 import shutil
-from pathlib import Path
-from datetime import date, datetime
+from datetime import date
 from uuid import UUID, uuid4
 from io import BytesIO
-from unittest.mock import Mock, patch, AsyncMock
-import pandas as pd
+from unittest.mock import patch
 import xlwt
 from PIL import Image, ImageDraw
 
@@ -16,29 +14,17 @@ from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 import sys
-import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from main import app
 from backend.core.database import get_session
 from backend.models.user import User, UserRole
-from backend.models.client import Client, ClientReference, ClientRate
-from backend.models.ticket import Ticket, TicketDTO
+from backend.models.client import Client, ClientReference
+from backend.models.ticket import Ticket
 from backend.models.batch import ProcessingBatch as Batch, BatchStatus
-from backend.models.ticket_image import TicketImage, TicketImageCreate
-from backend.models.match_result import MatchResult
+from backend.models.ticket_image import TicketImage
 
 from backend.services.auth_service import get_password_hash
-from backend.services.client_service import ClientService
-from backend.services.xls_parser_service import XLSParserService
 from backend.services.multi_row_xls_parser import MultiRowXLSParser
-from backend.services.ticket_mapper import TicketMapper
-from backend.services.ticket_validator import TicketValidator
-from backend.services.ticket_service import TicketService
-from backend.services.pdf_extraction_service import PDFExtractionService
-from backend.services.ocr_service import OCRService
-from backend.services.image_validator import ImageValidator
-from backend.services.ticket_image_service import TicketImageService
-from backend.services.match_service import MatchService
 from backend.services.reference_matcher import ReferenceMatcher
 from backend.services.client_loader_service import ClientLoaderService
 from backend.services.ticket_image_matcher import TicketImageMatcher
@@ -331,7 +317,7 @@ class TestEnhancedComprehensiveWorkflow:
         assert response.status_code == 200
         report = response.json()
         
-        print(f"\nBatch Report Summary:")
+        print("\nBatch Report Summary:")
         print(f"- Total tickets: {report.get('total_tickets', 0)}")
         print(f"- Valid tickets: {report.get('valid_tickets', 0)}")
         print(f"- Void tickets: {report.get('void_tickets', 0)}")
@@ -582,7 +568,7 @@ class TestEnhancedComprehensiveWorkflow:
         """Create empty XLS file"""
         xls_path = os.path.join(temp_dir, "empty.xls")
         workbook = xlwt.Workbook()
-        sheet = workbook.add_sheet('Sheet1')
+        workbook.add_sheet('Sheet1')
         workbook.save(xls_path)
         return xls_path
     

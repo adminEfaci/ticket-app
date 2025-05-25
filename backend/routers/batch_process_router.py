@@ -93,12 +93,24 @@ async def parse_batch_tickets(
         
         # Find XLS file in batch directory
         batch_dir = Path(os.getenv("UPLOAD_PATH", "/data/batches")) / str(batch_id)
+        
+        # Log directory contents for debugging
+        logger.info(f"Looking for XLS files in: {batch_dir}")
+        if batch_dir.exists():
+            logger.info(f"Directory contents: {list(batch_dir.iterdir())}")
+        else:
+            logger.error(f"Batch directory does not exist: {batch_dir}")
+            
         xls_files = list(batch_dir.glob("*.xls"))
         
         if not xls_files:
+            # Also try .xlsx extension
+            xls_files = list(batch_dir.glob("*.xlsx"))
+            
+        if not xls_files:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No XLS file found in batch directory"
+                detail=f"No XLS file found in batch directory. Directory exists: {batch_dir.exists()}, Files: {list(batch_dir.iterdir()) if batch_dir.exists() else 'N/A'}"
             )
         
         xls_file_path = xls_files[0]  # Use first XLS file found

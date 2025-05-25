@@ -327,12 +327,12 @@ class TicketService:
                 tickets_parsed=len(valid_tickets) + len(error_logs),
                 tickets_valid=len(created_tickets),
                 tickets_invalid=len(error_tickets),
-                duplicates_detected=len([e for e in error_logs if "duplicate" in e.reason.lower()]),
+                duplicates_detected=len([e for e in error_logs if "duplicate" in e.error_message.lower()]),
                 errors=[
                     {
                         "ticket_number": error.ticket_number,
                         "row_number": error.row_number,
-                        "reason": error.reason
+                        "reason": error.error_message
                     }
                     for error in error_logs
                 ]

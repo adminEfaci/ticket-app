@@ -26,8 +26,15 @@ class BatchService:
         Returns:
             Created ProcessingBatch instance
         """
+        # Extract the ID to ensure it's used
+        batch_id = batch_data.pop('id', None)
+        
         batch_create = ProcessingBatchCreate(**batch_data)
         batch = ProcessingBatch.model_validate(batch_create)
+        
+        # Set the ID explicitly if provided
+        if batch_id:
+            batch.id = batch_id
         
         self.db.add(batch)
         self.db.commit()
@@ -315,7 +322,6 @@ class BatchService:
         })
         
         # Update timestamps
-        batch.updated_at = utcnow_naive()
         
         self.db.commit()
         self.db.refresh(batch)
@@ -365,7 +371,6 @@ class BatchService:
             batch.status = BatchStatus.ERROR
         
         # Update timestamps
-        batch.updated_at = utcnow_naive()
         
         self.db.commit()
         self.db.refresh(batch)
@@ -463,7 +468,6 @@ class BatchService:
         
         batch.status = BatchStatus.ERROR
         batch.error_reason = error_message
-        batch.updated_at = utcnow_naive()
         
         # Update stats
         if not batch.stats:
@@ -501,7 +505,7 @@ class BatchService:
             "batch_id": str(batch_id),
             "status": batch.status,
             "created_at": batch.uploaded_at.isoformat() if batch.uploaded_at else None,
-            "updated_at": batch.updated_at.isoformat() if batch.updated_at else None,
+            "processed_at": batch.processed_at.isoformat() if batch.processed_at else None,
             "error_reason": batch.error_reason
         }
         

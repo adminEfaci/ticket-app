@@ -26,7 +26,8 @@ import {
   Link2,
   FileX,
   Clock,
-  Building2
+  Building2,
+  Trash2
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { format } from 'date-fns'
@@ -71,6 +72,7 @@ export default function UploadPage() {
   const [loadingBatches, setLoadingBatches] = useState(true)
   const [viewingBatchId, setViewingBatchId] = useState<string | null>(null)
   const [batchFiles, setBatchFiles] = useState<any>(null)
+  const [clearingBatches, setClearingBatches] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -258,6 +260,30 @@ export default function UploadPage() {
         description: getErrorMessage(error),
         variant: 'destructive'
       })
+    }
+  }
+
+  const clearAllBatches = async () => {
+    if (!confirm('Are you sure you want to clear all batches? This action cannot be undone.')) {
+      return
+    }
+
+    setClearingBatches(true)
+    try {
+      const response = await apiClient.post('/upload/batches/clear-all')
+      toast({
+        title: 'Success',
+        description: response.data.message,
+      })
+      await fetchBatches()
+    } catch (error: any) {
+      toast({
+        title: 'Failed to clear batches',
+        description: getErrorMessage(error),
+        variant: 'destructive'
+      })
+    } finally {
+      setClearingBatches(false)
     }
   }
 
@@ -490,13 +516,38 @@ export default function UploadPage() {
       >
         <Card className="glass border-0 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              Recent Batches
-            </CardTitle>
-            <CardDescription>
-              View and manage your uploaded file batches
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Recent Batches
+                </CardTitle>
+                <CardDescription>
+                  View and manage your uploaded file batches
+                </CardDescription>
+              </div>
+              {batches.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAllBatches}
+                  disabled={clearingBatches}
+                  className="text-destructive hover:text-destructive"
+                >
+                  {clearingBatches ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Clearing...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Clear All
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {loadingBatches ? (

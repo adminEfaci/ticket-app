@@ -394,3 +394,58 @@ async def get_batch_files(
         "xls_filename": batch.xls_filename,
         "pdf_filename": batch.pdf_filename
     }
+
+@router.post("/batches/clear-all")
+async def clear_all_batches(
+    current_user: User = Depends(authenticated_required()),
+    db: Session = Depends(get_session)
+):
+    """Clear all batches - Admin only"""
+    user_role = UserRole(current_user.role.value)
+    
+    # Only admins can clear all batches
+    if user_role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can clear all batches"
+        )
+    
+    # Get all batches
+    from sqlmodel import select
+    from backend.models.batch import ProcessingBatch
+    from backend.models.ticket import Ticket
+    from backend.models.ticket_image import TicketImage
+    
+    # Delete all ticket images first
+    ticket_images = db.exec(select(TicketImage)).all()
+    for img in ticket_images:
+        db.delete(img)
+    
+    # Delete all tickets
+    for ticket in db.exec(select(Ticket)).all():
+        db.delete(ticket)
+    
+    # Get all batches to delete their files
+    batches = db.exec(select(ProcessingBatch)).all()
+    batch_count = len(batches)
+    
+    # Delete batch files
+    import os
+    import shutil
+    upload_path = os.getenv("UPLOAD_PATH", "/data/batches")
+    if os.path.exists(upload_path):
+        for batch in batches:
+            batch_dir = os.path.join(upload_path, str(batch.id))
+            if os.path.exists(batch_dir):
+                shutil.rmtree(batch_dir)
+    
+    # Delete all batches from database
+    for batch in batches:
+        db.delete(batch)
+    
+    db.commit()
+    
+    return {
+        "message": f"Successfully cleared {batch_count} batches and all associated data",
+        "batches_deleted": batch_count
+    }

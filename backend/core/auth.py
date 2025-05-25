@@ -4,8 +4,12 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from ..utils.datetime_utils import utcnow
 import secrets
+import os
 
-SECRET_KEY = secrets.token_urlsafe(32)
+# Allow SECRET_KEY to be provided via environment variable so JWT tokens remain
+# valid across application restarts. Fallback to a random key for development
+# environments where the variable is not set.
+SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 8
 

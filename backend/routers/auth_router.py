@@ -127,7 +127,6 @@ async def get_current_user_info(
 async def register_user(
     user_data: UserCreate,
     request: Request,
-    current_user: dict = Depends(manager_or_admin_required()),
     db: Session = Depends(get_session)
 ):
     auth_service = AuthService(db)
@@ -138,7 +137,7 @@ async def register_user(
     try:
         user = auth_service.create_user(
             user_data=user_data,
-            creator_role=current_user.role.value
+            creator_role="public",
         )
         
         if not user:
@@ -148,10 +147,10 @@ async def register_user(
             )
         
         audit_service.log_user_creation(
-            creator_id=current_user.id,
+            creator_id=None,
             created_user_id=user.id,
             ip_address=client_ip,
-            role=user.role
+            role=user.role,
         )
         
         return UserRead.model_validate(user)

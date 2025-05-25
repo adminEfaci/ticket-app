@@ -188,6 +188,10 @@ SECRET_KEY=your-secret-key-here
 ENVIRONMENT=development
 ```
 
+`SECRET_KEY` must remain constant between application restarts so that JWT tokens
+issued to users stay valid. Provide a strong value via environment variable in
+production.
+
 ### Client Reference Patterns
 Clients are assigned based on reference patterns:
 - `#007` → Client 007
@@ -215,9 +219,10 @@ docker run -p 8000:8000 --env-file .env ticket-app
 Full API documentation is available at `/docs` when the server is running.
 
 ### Key Endpoints
-- `POST /api/auth/login` - User authentication
-- `POST /api/upload/batch` - Upload XLS/PDF pair
-- `POST /api/batch/{id}/process` - Process uploaded batch
+- `POST /auth/login` - User authentication
+- `POST /auth/register` - Public user registration
+- `POST /upload/pairs` - Upload XLS/PDF pair
+- `POST /batches/{id}/parse` - Process uploaded batch
 - `GET /api/export/invoices-bundle/{date}` - Generate weekly export
 - `POST /api/clients` - Manage clients
 - `POST /api/clients/{id}/rates` - Manage client rates

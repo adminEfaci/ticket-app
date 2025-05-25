@@ -394,13 +394,18 @@ class TicketMapper:
                 ticket = self.map_dto_to_ticket(dto, batch_id, upload_date)
                 valid_tickets.append(ticket)
             except ValueError as e:
+                # Use proper TicketErrorLog fields so downstream processing
+                # can access `error_message` without errors
                 error_log = TicketErrorLog(
                     ticket_number=dto.ticket_number,
                     row_number=dto.row_number or 0,
-                    reason=f"Mapping error: {str(e)}",
-                    raw_data=dto.raw_data
+                    error_type="MAPPING_ERROR",
+                    error_message=f"Mapping error: {str(e)}",
+                    raw_data=dto.raw_data,
                 )
                 error_logs.append(error_log)
-                logger.warning(f"Failed to map ticket {dto.ticket_number}: {str(e)}")
+                logger.warning(
+                    f"Failed to map ticket {dto.ticket_number}: {str(e)}"
+                )
         
         return valid_tickets, error_logs

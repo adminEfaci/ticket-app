@@ -73,24 +73,34 @@ class AuthService:
         return False
     
     def validate_session(self, token: str) -> Optional[dict]:
+        # First verify the JWT to ensure it was signed with our secret and
+        # has not expired. If verification fails we treat the session as invalid.
+        from ..core.auth import verify_token
+
+        payload = verify_token(token)
+        if not payload:
+            return None
+
         token_hash = hashlib.sha256(token.encode()).hexdigest()
-        session = self.db.exec(select(UserSession).where(UserSession.token_hash == token_hash)).first()
-        
+        session = self.db.exec(
+            select(UserSession).where(UserSession.token_hash == token_hash)
+        ).first()
+
         if not session or session.is_expired():
             if session:
                 self.db.delete(session)
                 self.db.commit()
             return None
-        
+
         user = self.db.exec(select(User).where(User.id == session.user_id)).first()
         if not user or not user.is_active:
             return None
-        
+
         return {
             "user_id": str(user.id),
             "email": user.email,
             "role": user.role.value,
-            "session_id": str(session.id)
+            "session_id": str(session.id),
         }
     
     def create_user(self, user_data: UserCreate, creator_role: str) -> Optional[User]:

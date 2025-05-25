@@ -12,6 +12,7 @@ from ..middleware.auth_middleware import (
     authenticated_required
 )
 from ..core.database import get_session
+from backend.models.user import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -19,13 +20,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def get_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    current_user: dict = Depends(staff_required()),
+    current_user: User = Depends(staff_required()),
     db: Session = Depends(get_session)
 ):
     user_service = UserService(db)
     
     users = user_service.get_users(
-        requester_role=current_user["role"],
+        requester_role=current_user.role.value,
         skip=skip,
         limit=limit
     )
@@ -35,15 +36,15 @@ async def get_users(
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user(
     user_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     db: Session = Depends(get_session)
 ):
     user_service = UserService(db)
     
     user = user_service.get_user_by_id(
         user_id=user_id,
-        requester_role=current_user["role"],
-        requester_id=current_user["user_id"]
+        requester_role=current_user.role.value,
+        requester_id=current_user.id
     )
     
     if not user:
@@ -69,7 +70,7 @@ async def create_user(
     try:
         user = user_service.create_user(
             user_data=user_data,
-            creator_role=current_user["role"]
+            creator_role=current_user.role.value
         )
         
         if not user:
@@ -79,7 +80,7 @@ async def create_user(
             )
         
         audit_service.log_user_creation(
-            creator_id=current_user["user_id"],
+            creator_id=current_user.id,
             created_user_id=user.id,
             ip_address=client_ip,
             role=user.role
@@ -100,7 +101,7 @@ async def update_user(
     user_id: UUID,
     user_data: UserUpdate,
     request: Request,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     db: Session = Depends(get_session)
 ):
     user_service = UserService(db)
@@ -112,8 +113,8 @@ async def update_user(
         user = user_service.update_user(
             user_id=user_id,
             user_data=user_data,
-            updater_role=current_user["role"],
-            updater_id=current_user["user_id"]
+            updater_role=current_user.role.value,
+            updater_id=current_user.id
         )
         
         if not user:
@@ -124,7 +125,7 @@ async def update_user(
         
         changes = user_data.dict(exclude_unset=True)
         audit_service.log_user_update(
-            updater_id=current_user["user_id"],
+            updater_id=current_user.id,
             updated_user_id=user_id,
             ip_address=client_ip,
             changes=changes
@@ -155,8 +156,8 @@ async def delete_user(
     try:
         success = user_service.delete_user(
             user_id=user_id,
-            deleter_role=current_user["role"],
-            deleter_id=current_user["user_id"]
+            deleter_role=current_user.role.value,
+            deleter_id=current_user.id
         )
         
         if not success:
@@ -166,7 +167,7 @@ async def delete_user(
             )
         
         audit_service.log_user_deletion(
-            deleter_id=current_user["user_id"],
+            deleter_id=current_user.id,
             deleted_user_id=user_id,
             ip_address=client_ip
         )
@@ -196,8 +197,8 @@ async def deactivate_user(
     try:
         user = user_service.deactivate_user(
             user_id=user_id,
-            deactivator_role=current_user["role"],
-            deactivator_id=current_user["user_id"]
+            deactivator_role=current_user.role.value,
+            deactivator_id=current_user.id
         )
         
         if not user:
@@ -207,7 +208,7 @@ async def deactivate_user(
             )
         
         audit_service.log_user_update(
-            updater_id=current_user["user_id"],
+            updater_id=current_user.id,
             updated_user_id=user_id,
             ip_address=client_ip,
             changes={"is_active": False, "action": "deactivated"}

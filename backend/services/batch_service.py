@@ -430,7 +430,6 @@ class BatchService:
             raise ValueError(f"Batch {batch_id} is not in PENDING status (current: {batch.status})")
         
         batch.status = BatchStatus.VALIDATING
-        batch.updated_at = utcnow_naive()
         
         # Initialize stats if not present
         if not batch.stats:

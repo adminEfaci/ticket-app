@@ -1,11 +1,13 @@
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File, Form
+import logging
 from fastapi.params import Query as QueryParam
 from sqlmodel import Session
 
 from ..models.batch import ProcessingBatchRead
 from ..models.user import UserRole
+from backend.models.user import User
 from ..services.batch_service import BatchService
 from ..services.upload_service import UploadService
 from ..services.storage_service import StorageService
@@ -15,7 +17,11 @@ from ..middleware.auth_middleware import authenticated_required
 from ..core.database import get_session
 import os
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 router = APIRouter(prefix="/upload", tags=["upload"])
+logger = logging.getLogger(__name__)
 
 # Initialize services
 def get_storage_service() -> StorageService:
@@ -37,11 +43,27 @@ def get_batch_service(
 ) -> BatchService:
     return BatchService(db, storage)
 
-@router.post("/pairs")
-async def upload_file_pairs(
-    request: Request,
+@router.post("/test")
+async def test_upload(
     files: List[UploadFile] = File(...),
-    current_user: dict = Depends(authenticated_required()),
+    client_id: Optional[str] = Form(None),
+    description: Optional[str] = Form(None)
+):
+    """Test endpoint to debug file uploads"""
+    return {
+        "files_count": len(files),
+        "files": [{"name": f.filename, "size": f.size, "type": f.content_type} for f in files],
+        "client_id": client_id,
+        "description": description
+    }
+
+@router.post("/pairs", response_model=dict)
+async def upload_file_pairs(
+    files: List[UploadFile] = File(...),
+    client_id: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    request: Request = None,
+    current_user: User = Depends(authenticated_required()),
     upload_service: UploadService = Depends(get_upload_service),
     batch_service: BatchService = Depends(get_batch_service),
     audit_service: AuditService = Depends(lambda db=Depends(get_session): AuditService(db)),
@@ -53,18 +75,35 @@ async def upload_file_pairs(
     Each pair will create a separate processing batch.
     Maximum 30 pairs per request.
     """
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = request.client.host if request and request.client else "unknown"
     
     try:
-        # Extract user information
-        user_id = current_user["user_id"]
-        user_role = UserRole(current_user["role"])
+        # Log incoming files for debugging
+        logger.info(f"Received {len(files)} files for upload")
+        logger.info(f"Client ID: {client_id}, Description: {description}")
+        for file in files:
+            logger.info(f"File: {file.filename}, Size: {file.size}, Content-Type: {file.content_type}")
         
-        # Determine client_id for client users
-        client_id = user_id if user_role == UserRole.CLIENT else None
+        # Extract user information
+        user_id = current_user.id
+        user_role = UserRole(current_user.role.value)
+        
+        # Determine client_id - use provided client_id if admin/manager, otherwise use user_id for client users
+        if user_role == UserRole.CLIENT:
+            effective_client_id = user_id
+        elif client_id and user_role in [UserRole.ADMIN, UserRole.MANAGER]:
+            # Convert string UUID to UUID object
+            try:
+                effective_client_id = UUID(client_id) if client_id else None
+            except ValueError:
+                effective_client_id = None
+        else:
+            effective_client_id = None
         
         # Extract file pairs from upload
+        logger.info("Extracting file pairs...")
         file_pairs, pairing_errors = upload_service.extract_file_pairs_from_upload(files)
+        logger.info(f"Found {len(file_pairs)} pairs, {len(pairing_errors)} errors")
         
         if not file_pairs and pairing_errors:
             # Log the failed upload attempt
@@ -85,9 +124,11 @@ async def upload_file_pairs(
             )
         
         # Process file pairs
+        logger.info(f"Processing {len(file_pairs)} file pairs...")
         successful_batches, failed_batches = await upload_service.process_multiple_pairs(
-            file_pairs, user_id, client_id
+            file_pairs, user_id, effective_client_id
         )
+        logger.info(f"Processing complete: {len(successful_batches)} successful, {len(failed_batches)} failed")
         
         # Create database records for successful batches
         created_batches = []
@@ -104,6 +145,9 @@ async def upload_file_pairs(
                 continue
             
             try:
+                # Add description if provided
+                if description:
+                    batch_data["description"] = description
                 batch = batch_service.create_batch(batch_data)
                 created_batches.append(ProcessingBatchRead.model_validate(batch))
                 
@@ -168,7 +212,7 @@ async def upload_file_pairs(
     except Exception as e:
         # Log the error
         audit_service.log_upload_attempt(
-            user_id=current_user["user_id"],
+            user_id=current_user.id,
             ip_address=client_ip,
             success=False,
             file_count=len(files),
@@ -186,7 +230,7 @@ async def get_batches(
     limit: int = QueryParam(100, ge=1, le=1000),
     status: Optional[str] = QueryParam(None),
     client_id: Optional[UUID] = QueryParam(None),
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service)
 ):
     """
@@ -197,8 +241,8 @@ async def get_batches(
     - Processors/Managers: See all batches, can filter by client
     - Admins: See all batches, can filter by client
     """
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     
     batches = batch_service.get_batches(
         requester_id=user_id,
@@ -214,7 +258,7 @@ async def get_batches(
 @router.get("/batches/{batch_id}", response_model=ProcessingBatchRead)
 async def get_batch(
     batch_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service)
 ):
     """
@@ -222,8 +266,8 @@ async def get_batch(
     
     Access control applied based on user role.
     """
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     
     batch = batch_service.get_batch_by_id(batch_id, user_id, user_role)
     
@@ -239,7 +283,7 @@ async def get_batch(
 async def delete_batch(
     batch_id: UUID,
     request: Request,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service),
     audit_service: AuditService = Depends(lambda db=Depends(get_session): AuditService(db))
 ):
@@ -251,8 +295,8 @@ async def delete_batch(
     - Processors/Managers: Can delete any pending batch
     - Admins: Can delete any batch
     """
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     client_ip = request.client.host if request.client else "unknown"
     
     # Get batch for audit logging
@@ -291,7 +335,7 @@ async def delete_batch(
 
 @router.get("/stats")
 async def get_upload_stats(
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service)
 ):
     """
@@ -300,13 +344,13 @@ async def get_upload_stats(
     Available to all authenticated users.
     """
     # Only admins and managers get full stats
-    user_role = UserRole(current_user["role"])
+    user_role = UserRole(current_user.role.value)
     
     if user_role in [UserRole.ADMIN, UserRole.MANAGER]:
         return batch_service.get_batch_stats()
     else:
         # Limited stats for other users
-        user_id = current_user["user_id"]
+        user_id = current_user.id
         user_batches = batch_service.get_batches(
             requester_id=user_id,
             requester_role=user_role,
@@ -322,3 +366,31 @@ async def get_upload_stats(
         }
         
         return user_stats
+
+@router.get("/batches/{batch_id}/files")
+async def get_batch_files(
+    batch_id: UUID,
+    current_user: User = Depends(authenticated_required()),
+    batch_service: BatchService = Depends(get_batch_service),
+    storage_service: StorageService = Depends(get_storage_service)
+):
+    """Get information about files in a batch"""
+    user_role = UserRole(current_user.role.value)
+    
+    # Get batch with access control
+    batch = batch_service.get_batch_by_id(batch_id, current_user.id, user_role)
+    if not batch:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Batch not found or access denied"
+        )
+    
+    # Get file information
+    files_info = storage_service.get_batch_files_info(batch_id)
+    
+    return {
+        "batch_id": batch_id,
+        "files": files_info,
+        "xls_filename": batch.xls_filename,
+        "pdf_filename": batch.pdf_filename
+    }

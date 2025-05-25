@@ -4,6 +4,7 @@ from typing import List, Optional
 from ..services.auth_service import AuthService
 from ..services.audit_service import AuditService
 from ..core.database import get_session
+from ..models.user import User
 from sqlmodel import Session
 import functools
 
@@ -12,7 +13,7 @@ security = HTTPBearer()
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_session)
-) -> dict:
+) -> User:
     
     token = credentials.credentials
     
@@ -26,7 +27,16 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    return user_data
+    # Get the actual User object from the database
+    user = db.get(User, user_data.get('user_id'))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return user
 
 def require_roles(allowed_roles: List[str]):
     def decorator(func):
@@ -34,7 +44,14 @@ def require_roles(allowed_roles: List[str]):
         async def wrapper(*args, **kwargs):
             current_user = kwargs.get('current_user') or args[0] if args else None
             
-            if not current_user or current_user.get('role') not in allowed_roles:
+            if not current_user:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Insufficient permissions"
+                )
+            
+            user_role = current_user.role if isinstance(current_user, User) else current_user.get('role')
+            if user_role not in allowed_roles:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Insufficient permissions"
@@ -55,6 +72,8 @@ def audit_action(action: str, entity: Optional[str] = None):
             for arg in args:
                 if isinstance(arg, Request):
                     request = arg
+                elif isinstance(arg, User):
+                    current_user = arg
                 elif isinstance(arg, dict) and 'user_id' in arg:
                     current_user = arg
                 elif isinstance(arg, Session):
@@ -63,6 +82,8 @@ def audit_action(action: str, entity: Optional[str] = None):
             for key, value in kwargs.items():
                 if isinstance(value, Request):
                     request = value
+                elif isinstance(value, User):
+                    current_user = value
                 elif isinstance(value, dict) and 'user_id' in value:
                     current_user = value
                 elif isinstance(value, Session):
@@ -81,8 +102,9 @@ def audit_action(action: str, entity: Optional[str] = None):
                     elif isinstance(result, dict) and 'id' in result:
                         entity_id = result['id']
                     
+                    user_id = current_user.id if isinstance(current_user, User) else current_user['user_id']
                     await audit_service.log_action(
-                        user_id=current_user['user_id'],
+                        user_id=user_id,
                         action=action,
                         ip_address=client_ip,
                         entity=entity,
@@ -92,17 +114,19 @@ def audit_action(action: str, entity: Optional[str] = None):
                     return result
                     
                 except HTTPException as e:
+                    user_id = current_user.id if isinstance(current_user, User) else current_user['user_id']
                     if e.status_code == status.HTTP_403_FORBIDDEN:
                         await audit_service.log_permission_violation(
-                            user_id=current_user['user_id'],
+                            user_id=user_id,
                             ip_address=client_ip,
                             attempted_action=action,
                             target_entity=entity
                         )
                     raise
                 except Exception as e:
+                    user_id = current_user.id if isinstance(current_user, User) else current_user['user_id']
                     await audit_service.log_action(
-                        user_id=current_user['user_id'],
+                        user_id=user_id,
                         action=f"{action}_failed",
                         ip_address=client_ip,
                         entity=entity,
@@ -119,8 +143,8 @@ class RoleChecker:
     def __init__(self, allowed_roles: List[str]):
         self.allowed_roles = allowed_roles
     
-    def __call__(self, current_user: dict = Depends(get_current_user)):
-        if current_user['role'] not in self.allowed_roles:
+    def __call__(self, current_user: User = Depends(get_current_user)):
+        if current_user.role not in self.allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions"

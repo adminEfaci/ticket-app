@@ -17,6 +17,7 @@ from ..services.ticket_image_service import TicketImageService
 from ..services.batch_service import BatchService
 from ..services.audit_service import AuditService
 from ..utils.request_context import get_client_ip
+from backend.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ router = APIRouter(
 @router.post("/{batch_id}/extract-images", response_model=ImageExtractionResult)
 async def extract_images_from_batch(
     batch_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     db=Depends(get_session),
     request: Request = None,
     client_ip: str = Depends(get_client_ip)
@@ -50,8 +51,8 @@ async def extract_images_from_batch(
         image_export_service = ImageExportService()
         ticket_image_service = TicketImageService(db, audit_service)
         
-        user_id = current_user.get('id')
-        user_role = current_user.get('role')
+        user_id = current_user.id
+        user_role = current_user.role.value
         
         # Check permissions
         if user_role not in [UserRole.PROCESSOR, UserRole.MANAGER, UserRole.ADMIN]:
@@ -290,7 +291,7 @@ async def list_batch_images(
     skip: int = 0,
     limit: int = 100,
     valid_only: bool = False,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     db=Depends(get_session)
 ):
     """
@@ -325,7 +326,7 @@ async def list_batch_images(
 @router.get("/{batch_id}/image-statistics")
 async def get_batch_image_statistics(
     batch_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     db=Depends(get_session)
 ):
     """
@@ -357,7 +358,7 @@ async def get_batch_image_statistics(
 @router.get("/images/{image_id}", response_model=TicketImageRead)
 async def get_ticket_image(
     image_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     db=Depends(get_session)
 ):
     """
@@ -396,7 +397,7 @@ async def get_ticket_image(
 async def update_ticket_image(
     image_id: UUID,
     update_data: TicketImageUpdate,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     db=Depends(get_session)
 ):
     """
@@ -405,7 +406,7 @@ async def update_ticket_image(
     Requires MANAGER or ADMIN role
     """
     try:
-        user_role = current_user.get('role')
+        user_role = current_user.role.value
         
         if user_role not in [UserRole.MANAGER, UserRole.ADMIN]:
             raise HTTPException(
@@ -466,7 +467,7 @@ async def delete_ticket_image(
         audit_service = AuditService(db)
         image_export_service = ImageExportService()
         
-        user_id = current_user.get('id')
+        user_id = current_user.id
         
         # Get existing image
         existing_image = ticket_image_service.get_ticket_image_by_id(image_id)

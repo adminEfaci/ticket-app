@@ -28,7 +28,7 @@ async def run_batch_matching(
     try:
         result = await match_service.run_batch_matching(
             batch_id=batch_id,
-            user_id=current_user['user_id'],
+            user_id=current_user.id,
             force_rematch=force_rematch
         )
         
@@ -171,7 +171,7 @@ async def accept_match(
     try:
         result = await match_service.accept_match(
             match_id=match_id,
-            user_id=current_user['user_id'],
+            user_id=current_user.id,
             decision=decision
         )
         
@@ -205,7 +205,7 @@ async def reject_match(
     try:
         result = await match_service.reject_match(
             match_id=match_id,
-            user_id=current_user['user_id'],
+            user_id=current_user.id,
             reason=reason
         )
         

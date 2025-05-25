@@ -173,7 +173,7 @@ class WeeklyExportService:
         
         return validation
     
-    def group_tickets_by_week(
+    async def group_tickets_by_week(
         self, 
         tickets: List[Ticket]
     ) -> Dict[str, WeeklyGrouping]:
@@ -203,9 +203,9 @@ class WeeklyExportService:
                 continue
             
             # Get rate for this client and date
-            rate = self.rate_service.get_rate_for_ticket(
+            rate = await self.rate_service.get_effective_rate(
                 client_id=client.id,
-                entry_date=ticket.entry_date
+                effective_date=ticket.entry_date
             )
             
             if not rate:

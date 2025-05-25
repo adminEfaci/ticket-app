@@ -6,6 +6,7 @@ from ..services.auth_service import AuthService
 from ..services.audit_service import AuditService
 from ..middleware.auth_middleware import get_current_user, security, manager_or_admin_required
 from ..core.database import get_session
+from backend.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -67,7 +68,7 @@ async def login(
 async def logout(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session)
 ):
     auth_service = AuthService(db)
@@ -80,7 +81,7 @@ async def logout(
         
         if success:
             audit_service.log_logout(
-                user_id=current_user["user_id"],
+                user_id=current_user.id,
                 ip_address=client_ip,
                 session_id=current_user["session_id"]
             )
@@ -102,16 +103,16 @@ async def logout(
 
 @router.get("/me")
 async def get_current_user_info(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session)
 ):
     from ..services.user_service import UserService
     
     user_service = UserService(db)
     user = user_service.get_user_by_id(
-        user_id=current_user["user_id"],
-        requester_role=current_user["role"],
-        requester_id=current_user["user_id"]
+        user_id=current_user.id,
+        requester_role=current_user.role.value,
+        requester_id=current_user.id
     )
     
     if not user:
@@ -137,7 +138,7 @@ async def register_user(
     try:
         user = auth_service.create_user(
             user_data=user_data,
-            creator_role=current_user["role"]
+            creator_role=current_user.role.value
         )
         
         if not user:
@@ -147,7 +148,7 @@ async def register_user(
             )
         
         audit_service.log_user_creation(
-            creator_id=current_user["user_id"],
+            creator_id=current_user.id,
             created_user_id=user.id,
             ip_address=client_ip,
             role=user.role
@@ -165,7 +166,7 @@ async def register_user(
 
 @router.post("/validate-token")
 async def validate_token(
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     return {
         "valid": True,

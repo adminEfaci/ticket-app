@@ -98,7 +98,7 @@ class ExportBundleService:
                 )
             
             # 3. Group tickets by week/client/reference
-            week_groups = self.weekly_export_service.group_tickets_by_week(tickets)
+            week_groups = await self.weekly_export_service.group_tickets_by_week(tickets)
             
             if not week_groups:
                 error_msg = "No data to export after grouping"

@@ -10,18 +10,21 @@ import { Download, Calendar, FileSpreadsheet, Package, CheckCircle } from 'lucid
 import { format } from 'date-fns'
 
 interface ExportResult {
-  bundle_path: string
-  stats: {
-    total_tickets: number
-    total_weeks: number
-    total_clients: number
-    total_references: number
-  }
+  success: boolean
+  export_id: string
+  file_path?: string
+  file_size?: number
   validation: {
     is_valid: boolean
-    errors: string[]
-    warnings: string[]
+    total_tickets: number
+    matched_images: number
+    missing_images: number
+    match_percentage: number
+    duplicate_tickets?: string[]
+    validation_errors?: string[]
   }
+  error_message?: string
+  audit_log_id: string
 }
 
 export default function ExportPage() {
@@ -38,24 +41,26 @@ export default function ExportPage() {
     setExporting(true)
 
     try {
-      const response = await apiClient.post('/api/export/weekly', {
+      const response = await apiClient.post('/api/export/invoices-bundle', {
         start_date: startDate,
         end_date: endDate,
-        export_type: 'weekly'
+        export_type: 'weekly',
+        include_images: true,
+        force_export: false
       })
 
       setResult(response.data)
       
       // Download the file
-      if (response.data.bundle_path) {
-        const downloadResponse = await apiClient.get(`/api/export/download/${response.data.bundle_path}`, {
+      if (response.data.success && response.data.export_id) {
+        const downloadResponse = await apiClient.get(`/api/export/download/${response.data.export_id}`, {
           responseType: 'blob'
         })
         
         const url = window.URL.createObjectURL(new Blob([downloadResponse.data]))
         const link = document.createElement('a')
         link.href = url
-        link.setAttribute('download', response.data.bundle_path)
+        link.setAttribute('download', `export_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.zip`)
         document.body.appendChild(link)
         link.click()
         link.remove()
@@ -194,61 +199,69 @@ export default function ExportPage() {
       </div>
 
       {result && (
-        <Card className={result.validation.is_valid ? 'border-green-500' : 'border-yellow-500'}>
+        <Card className={result.success ? 'border-green-500' : 'border-red-500'}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {result.validation.is_valid ? (
+              {result.success ? (
                 <>
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   Export Completed Successfully
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-5 w-5 text-yellow-500" />
-                  Export Completed with Warnings
+                  <CheckCircle className="h-5 w-5 text-red-500" />
+                  Export Failed
                 </>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Tickets</p>
-                <p className="text-2xl font-bold">{result.stats.total_tickets}</p>
+            {result.success && result.validation && (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Tickets</p>
+                  <p className="text-2xl font-bold">{result.validation.total_tickets}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Images Matched</p>
+                  <p className="text-2xl font-bold">{result.validation.matched_images}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Match Rate</p>
+                  <p className="text-2xl font-bold">{result.validation.match_percentage.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">File Size</p>
+                  <p className="text-2xl font-bold">
+                    {result.file_size ? `${(result.file_size / 1024 / 1024).toFixed(2)} MB` : 'N/A'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Weeks</p>
-                <p className="text-2xl font-bold">{result.stats.total_weeks}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Clients</p>
-                <p className="text-2xl font-bold">{result.stats.total_clients}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">References</p>
-                <p className="text-2xl font-bold">{result.stats.total_references}</p>
-              </div>
-            </div>
+            )}
 
-            {result.validation.errors.length > 0 && (
+            {result.error_message && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                {result.error_message}
+              </div>
+            )}
+
+            {result.validation?.validation_errors && result.validation.validation_errors.length > 0 && (
               <div className="space-y-2">
-                <p className="font-medium text-red-600">Errors:</p>
+                <p className="font-medium text-red-600">Validation Errors:</p>
                 <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
-                  {result.validation.errors.map((error, idx) => (
+                  {result.validation.validation_errors.map((error, idx) => (
                     <li key={idx}>{error}</li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {result.validation.warnings.length > 0 && (
+            {result.validation?.duplicate_tickets && result.validation.duplicate_tickets.length > 0 && (
               <div className="space-y-2">
-                <p className="font-medium text-yellow-600">Warnings:</p>
-                <ul className="list-disc list-inside text-sm text-yellow-600 space-y-1">
-                  {result.validation.warnings.map((warning, idx) => (
-                    <li key={idx}>{warning}</li>
-                  ))}
-                </ul>
+                <p className="font-medium text-yellow-600">Duplicate Tickets:</p>
+                <p className="text-sm text-yellow-600">
+                  {result.validation.duplicate_tickets.join(', ')}
+                </p>
               </div>
             )}
           </CardContent>

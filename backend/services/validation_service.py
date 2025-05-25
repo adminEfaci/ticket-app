@@ -13,7 +13,7 @@ class ValidationService:
     MAX_PAIRS_PER_SESSION = 30
     
     # Supported file extensions
-    ALLOWED_XLS_EXTENSIONS = {'.xls'}
+    ALLOWED_XLS_EXTENSIONS = {'.xls', '.xlsx'}
     ALLOWED_PDF_EXTENSIONS = {'.pdf'}
     
     def __init__(self):

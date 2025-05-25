@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
 from sqlmodel import Session
 
+from backend.models.user import User
 from backend.middleware.auth_middleware import get_current_user, admin_required
 from backend.core.database import get_session
 from backend.models.client import (
@@ -14,6 +15,7 @@ from backend.models.client import (
     ClientRateCreate, ClientRateRead, ClientRateUpdate,
     ClientHierarchy, ClientStatistics, ClientAssignmentResult
 )
+from backend.models.client_enhanced import ClientWithRate
 from backend.services.client_service import get_client_service
 from backend.services.reference_matcher import get_reference_matcher_service
 from backend.services.rate_service import RateService, RateAnalytics
@@ -26,16 +28,62 @@ router = APIRouter(prefix="/api/clients", tags=["clients"])
 
 # ========== CLIENT CRUD OPERATIONS ==========
 
+@router.get("/with-rates", response_model=List[ClientWithRate])
+async def list_clients_with_rates(
+    active_only: bool = Query(False, description="Only show active clients"),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """List all clients with their current rates"""
+    try:
+        from backend.utils.datetime_utils import utcnow
+        from sqlmodel import select
+        from backend.models.client import Client, ClientRate
+        
+        # Build query
+        query = select(Client)
+        if active_only:
+            query = query.where(Client.active == True)
+        
+        # Execute query
+        clients = session.exec(query).all()
+        
+        # Get current rates for all clients
+        current_date = utcnow().date()
+        clients_with_rates = []
+        
+        for client in clients:
+            # Get the latest rate for this client
+            rate_query = select(ClientRate).where(
+                ClientRate.client_id == client.id,
+                ClientRate.effective_from <= current_date
+            ).order_by(ClientRate.effective_from.desc())
+            
+            latest_rate = session.exec(rate_query).first()
+            
+            client_dict = client.model_dump()
+            client_dict['current_rate'] = latest_rate.rate_per_tonne if latest_rate else None
+            clients_with_rates.append(ClientWithRate(**client_dict))
+        
+        return clients_with_rates
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch clients with rates: {str(e)}"
+        )
+
 @router.post("/", response_model=ClientRead, status_code=status.HTTP_201_CREATED)
 async def create_client(
     client_data: ClientCreate,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Create a new client (admin only)"""
     try:
         client_service = get_client_service(session)
-        client = await client_service.create_client(client_data, current_user['user_id'])
+        client = await client_service.create_client(client_data, current_user.id)
         return client
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -49,7 +97,7 @@ async def list_clients(
     parent_id: Optional[UUID] = Query(None, description="Filter by parent client"),
     skip: int = Query(0, ge=0, description="Skip records"),
     limit: int = Query(100, ge=1, le=500, description="Limit records"),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """List all clients with optional filtering"""
@@ -57,9 +105,9 @@ async def list_clients(
         client_service = get_client_service(session)
         
         # For non-admin users, filter to their assigned client
-        if current_user['role'] != 'admin' and current_user.get('client_id'):
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None):
             # Only show their own client
-            client = await client_service.get_client(current_user.get('client_id'))
+            client = await client_service.get_client(getattr(current_user, 'client_id', None))
             return [client] if client else []
         
         # Admin users can see all clients
@@ -77,7 +125,7 @@ async def list_clients(
 @router.get("/hierarchy", response_model=List[ClientHierarchy])
 async def get_client_hierarchy(
     root_client_id: Optional[UUID] = Query(None, description="Root client to start from"),
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Get client hierarchy tree (admin only)"""
@@ -95,7 +143,7 @@ async def get_client_hierarchy(
 async def search_clients(
     q: str = Query(..., min_length=1, description="Search term"),
     limit: int = Query(10, ge=1, le=50, description="Maximum results"),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Search clients by name"""
@@ -103,9 +151,9 @@ async def search_clients(
         client_service = get_client_service(session)
         
         # For non-admin users, restrict search
-        if current_user['role'] != 'admin' and current_user.get('client_id'):
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None):
             # Can only search their own client
-            client = await client_service.get_client(current_user.get('client_id'))
+            client = await client_service.get_client(getattr(current_user, 'client_id', None))
             if client and q.lower() in client.name.lower():
                 return [client]
             return []
@@ -119,7 +167,7 @@ async def search_clients(
 @router.get("/{client_id}", response_model=ClientRead)
 async def get_client(
     client_id: UUID,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get a specific client by ID"""
@@ -127,7 +175,7 @@ async def get_client(
         client_service = get_client_service(session)
         
         # Access control
-        if current_user['role'] != 'admin' and current_user.get('client_id') != client_id:
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None) != client_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
         client = await client_service.get_client(client_id)
@@ -145,13 +193,13 @@ async def get_client(
 async def update_client(
     client_id: UUID,
     client_data: ClientUpdate,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Update client details (admin only)"""
     try:
         client_service = get_client_service(session)
-        client = await client_service.update_client(client_id, client_data, current_user['user_id'])
+        client = await client_service.update_client(client_id, client_data, current_user.id)
         return client
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -162,13 +210,13 @@ async def update_client(
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_client(
     client_id: UUID,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Delete a client (admin only, blocked if tickets exist)"""
     try:
         client_service = get_client_service(session)
-        success = await client_service.delete_client(client_id, current_user['user_id'])
+        success = await client_service.delete_client(client_id, current_user.id)
         if not success:
             raise HTTPException(status_code=404, detail="Client not found")
     except ValueError as e:
@@ -186,13 +234,13 @@ async def get_client_statistics(
     client_id: UUID,
     date_from: Optional[date] = Query(None, description="Start date"),
     date_to: Optional[date] = Query(None, description="End date"),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get statistics for a client"""
     try:
         # Access control
-        if current_user['role'] != 'admin' and current_user.get('client_id') != client_id:
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None) != client_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
         client_service = get_client_service(session)
@@ -212,7 +260,7 @@ async def get_client_statistics(
 async def add_client_reference(
     client_id: UUID,
     reference_data: ClientReferenceCreate,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Add a reference pattern to a client (admin only)"""
@@ -250,7 +298,7 @@ async def add_client_reference(
         
         # Create reference
         from backend.models.client import ClientReference
-        reference = ClientReference(**reference_data.model_dump(), created_by=current_user['user_id'])
+        reference = ClientReference(**reference_data.model_dump(), created_by=current_user.id)
         session.add(reference)
         session.commit()
         session.refresh(reference)
@@ -265,13 +313,13 @@ async def add_client_reference(
 @router.get("/{client_id}/references", response_model=List[ClientReferenceRead])
 async def get_client_references(
     client_id: UUID,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get all reference patterns for a client"""
     try:
         # Access control
-        if current_user['role'] != 'admin' and current_user.get('client_id') != client_id:
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None) != client_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
         matcher_service = get_reference_matcher_service(session)
@@ -287,7 +335,7 @@ async def get_client_references(
 async def update_client_reference(
     reference_id: UUID,
     reference_data: ClientReferenceUpdate,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Update a reference pattern (admin only)"""
@@ -327,7 +375,7 @@ async def update_client_reference(
 @router.delete("/references/{reference_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_client_reference(
     reference_id: UUID,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Delete a reference pattern (admin only)"""
@@ -353,7 +401,7 @@ async def add_client_rate(
     client_id: UUID,
     rate_data: ClientRateCreate,
     auto_approve: bool = Query(False, description="Auto-approve rate (admin only)"),
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Add a new rate for a client (admin only)"""
@@ -365,7 +413,7 @@ async def add_client_rate(
         rate_service = RateService(session)
         rate = await rate_service.create_rate(
             rate_data,
-            approved_by=current_user['user_id'] if auto_approve else None,
+            approved_by=current_user.id if auto_approve else None,
             auto_approve=auto_approve
         )
         return rate
@@ -380,13 +428,13 @@ async def get_client_rates(
     client_id: UUID,
     include_expired: bool = Query(False, description="Include expired rates"),
     limit: Optional[int] = Query(None, ge=1, le=100, description="Limit results"),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get rate history for a client"""
     try:
         # Access control
-        if current_user['role'] != 'admin' and current_user.get('client_id') != client_id:
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None) != client_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
         rate_service = RateService(session)
@@ -400,13 +448,13 @@ async def get_client_rates(
 async def get_effective_rate(
     client_id: UUID,
     effective_date: Optional[date] = Query(None, description="Date to check (defaults to today)"),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get the effective rate for a client on a specific date"""
     try:
         # Access control
-        if current_user['role'] != 'admin' and current_user.get('client_id') != client_id:
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None) != client_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
         rate_service = RateService(session)
@@ -425,13 +473,13 @@ async def get_effective_rate(
 async def update_rate(
     rate_id: UUID,
     rate_data: ClientRateUpdate,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Update a rate (admin only, cannot update approved rates)"""
     try:
         rate_service = RateService(session)
-        rate = await rate_service.update_rate(rate_id, rate_data, current_user['user_id'])
+        rate = await rate_service.update_rate(rate_id, rate_data, current_user.id)
         if not rate:
             raise HTTPException(status_code=404, detail="Rate not found")
         
@@ -445,13 +493,13 @@ async def update_rate(
 @router.post("/rates/{rate_id}/approve", response_model=ClientRateRead)
 async def approve_rate(
     rate_id: UUID,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Approve a pending rate (admin only)"""
     try:
         rate_service = RateService(session)
-        rate = await rate_service.approve_rate(rate_id, current_user['user_id'])
+        rate = await rate_service.approve_rate(rate_id, current_user.id)
         if not rate:
             raise HTTPException(status_code=404, detail="Rate not found")
         
@@ -465,13 +513,13 @@ async def approve_rate(
 @router.delete("/rates/{rate_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_rate(
     rate_id: UUID,
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Delete a rate (admin only, cannot delete approved rates)"""
     try:
         rate_service = RateService(session)
-        success = await rate_service.delete_rate(rate_id, current_user['user_id'])
+        success = await rate_service.delete_rate(rate_id, current_user.id)
         if not success:
             raise HTTPException(status_code=404, detail="Rate not found")
     except ValueError as e:
@@ -487,7 +535,7 @@ async def delete_rate(
 @router.get("/rates/pending", response_model=List[ClientRateRead])
 async def get_pending_rates(
     limit: Optional[int] = Query(None, ge=1, le=100, description="Limit results"),
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Get all pending (unapproved) rates (admin only)"""
@@ -504,7 +552,7 @@ async def get_rate_statistics(
     client_id: UUID,
     start_date: Optional[date] = Query(None, description="Start date"),
     end_date: Optional[date] = Query(None, description="End date"),
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Get rate statistics for a client (admin only)"""
@@ -521,7 +569,7 @@ async def get_rate_statistics(
 @router.post("/test-reference-matching")
 async def test_reference_matching(
     test_references: List[str],
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Test reference matching against configured patterns (admin only)"""
@@ -536,7 +584,7 @@ async def test_reference_matching(
 @router.get("/find-by-reference/{reference}", response_model=Optional[ClientAssignmentResult])
 async def find_client_by_reference(
     reference: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Find the best matching client for a reference"""
@@ -573,13 +621,13 @@ async def get_client_tickets(
     limit: int = Query(100, ge=1, le=500),
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get tickets for a specific client"""
     try:
         # Access control
-        if current_user['role'] != 'admin' and current_user.get('client_id') != client_id:
+        if current_user.role.value != 'admin' and getattr(current_user, 'client_id', None) != client_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
         ticket_service = TicketService(session)
@@ -603,7 +651,7 @@ async def get_client_tickets(
 async def import_clients_from_csv(
     file: UploadFile = File(..., description="CSV file with client data"),
     create_topps: bool = Query(True, description="Create TOPPS client for T-xxx references"),
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Import clients from CSV file (admin only)"""
@@ -626,12 +674,12 @@ async def import_clients_from_csv(
             
             # Create TOPPS client if requested
             if create_topps:
-                await loader_service.create_topps_client(current_user['user_id'])
+                await loader_service.create_topps_client(current_user.id)
             
             # Load clients from CSV
             clients, errors = await loader_service.load_clients_from_csv(
                 Path(tmp_path),
-                current_user['user_id']
+                current_user.id
             )
             
             return {
@@ -657,7 +705,7 @@ async def export_clients_to_csv(
     include_references: bool = Query(True, description="Include reference patterns"),
     include_rates: bool = Query(True, description="Include current rates"),
     active_only: bool = Query(True, description="Only export active clients"),
-    current_user: dict = Depends(admin_required()),
+    current_user: User = Depends(admin_required()),
     session: Session = Depends(get_session)
 ):
     """Export clients to CSV format (admin only)"""

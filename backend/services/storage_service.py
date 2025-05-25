@@ -137,3 +137,22 @@ class StorageService:
             "total_size": total_size,
             "files": [{"name": f.name, "size": f.stat().st_size} for f in files if f.is_file()]
         }
+    
+    def get_batch_files_info(self, batch_id: UUID) -> list[dict]:
+        """Get detailed information about files in a batch"""
+        batch_dir = self.get_batch_directory(batch_id)
+        if not batch_dir.exists():
+            return []
+        
+        files_info = []
+        for file_path in batch_dir.iterdir():
+            if file_path.is_file():
+                stat = file_path.stat()
+                files_info.append({
+                    "name": file_path.name,
+                    "size": stat.st_size,
+                    "modified": stat.st_mtime,
+                    "type": "xls" if file_path.suffix.lower() in ['.xls', '.xlsx'] else "pdf" if file_path.suffix.lower() == '.pdf' else "other"
+                })
+        
+        return files_info

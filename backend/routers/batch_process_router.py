@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlmodel import Session
 
 from ..models.ticket import TicketRead, TicketParsingResult
-from ..models.user import UserRole
+from ..models.user import UserRole, User
 from ..services.xls_parser_service import XlsParserService
 from ..services.ticket_mapper import TicketMapper
 from ..services.ticket_validator import TicketValidator
@@ -18,6 +18,7 @@ from ..core.database import get_session
 import logging
 import os
 from datetime import date
+from backend.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def get_audit_service(db: Session = Depends(get_session)) -> AuditService:
 async def parse_batch_tickets(
     batch_id: UUID,
     request: Request,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service),
     ticket_service: TicketService = Depends(get_ticket_service),
     audit_service: AuditService = Depends(get_audit_service),
@@ -56,8 +57,14 @@ async def parse_batch_tickets(
     Only processors, managers, and admins can trigger parsing
     """
     client_ip = request.client.host if request.client else "unknown"
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    
+    # Handle both User object and dict
+    if isinstance(current_user, User):
+        user_id = str(current_user.id)
+        user_role = current_user.role
+    else:
+        user_id = current_user.id
+        user_role = UserRole(current_user.role.value)
     
     # Check permissions - only staff can parse
     if user_role not in [UserRole.PROCESSOR, UserRole.MANAGER, UserRole.ADMIN]:
@@ -68,7 +75,7 @@ async def parse_batch_tickets(
     
     try:
         # Get batch and validate it can be parsed
-        batch = batch_service.get_batch_by_id(batch_id, user_id, user_role)
+        batch = batch_service.get_batch_by_id(batch_id, UUID(user_id), user_role)
         if not batch:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -76,10 +83,12 @@ async def parse_batch_tickets(
             )
         
         # Check if batch is in the right state for parsing
-        if batch.status.value != "PENDING":
+        # Handle both enum and string comparisons
+        batch_status = batch.status.value if hasattr(batch.status, 'value') else str(batch.status)
+        if batch_status.upper() != "PENDING":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Batch must be in PENDING status to parse (current: {batch.status})"
+                detail=f"Batch must be in PENDING status to parse (current: {batch_status})"
             )
         
         # Find XLS file in batch directory
@@ -223,15 +232,15 @@ async def get_batch_tickets(
     include_invalid: bool = False,
     skip: int = 0,
     limit: int = 100,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service),
     ticket_service: TicketService = Depends(get_ticket_service)
 ):
     """
     Get tickets for a specific batch
     """
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     
     # Verify batch access
     batch = batch_service.get_batch_by_id(batch_id, user_id, user_role)
@@ -251,14 +260,14 @@ async def get_batch_tickets(
 @router.get("/{batch_id}/parse-status")
 async def get_batch_parse_status(
     batch_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service)
 ):
     """
     Get parsing status for a batch
     """
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     
     # Verify batch access
     batch = batch_service.get_batch_by_id(batch_id, user_id, user_role)
@@ -274,14 +283,14 @@ async def get_batch_parse_status(
 async def get_ticket_details(
     batch_id: UUID,
     ticket_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     ticket_service: TicketService = Depends(get_ticket_service)
 ):
     """
     Get details for a specific ticket
     """
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     
     ticket = ticket_service.get_ticket_by_id(ticket_id, user_id, user_role)
     if not ticket:
@@ -304,7 +313,7 @@ async def delete_ticket(
     batch_id: UUID,
     ticket_id: UUID,
     request: Request,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     ticket_service: TicketService = Depends(get_ticket_service),
     audit_service: AuditService = Depends(get_audit_service)
 ):
@@ -314,8 +323,8 @@ async def delete_ticket(
     Only managers and admins can delete tickets
     """
     client_ip = request.client.host if request.client else "unknown"
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     
     # Check permissions
     if user_role not in [UserRole.MANAGER, UserRole.ADMIN]:
@@ -361,15 +370,15 @@ async def delete_ticket(
 @router.get("/{batch_id}/statistics")
 async def get_batch_ticket_statistics(
     batch_id: UUID,
-    current_user: dict = Depends(authenticated_required()),
+    current_user: User = Depends(authenticated_required()),
     batch_service: BatchService = Depends(get_batch_service),
     ticket_service: TicketService = Depends(get_ticket_service)
 ):
     """
     Get detailed statistics for tickets in a batch
     """
-    user_id = current_user["user_id"]
-    user_role = UserRole(current_user["role"])
+    user_id = current_user.id
+    user_role = UserRole(current_user.role.value)
     
     # Verify batch access
     batch = batch_service.get_batch_by_id(batch_id, user_id, user_role)

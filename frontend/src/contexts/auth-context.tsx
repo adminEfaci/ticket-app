@@ -17,7 +17,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (username: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
 }
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      const response = await apiClient.get('/api/users/me')
+      const response = await apiClient.get('/auth/me')
       setUser(response.data)
     } catch (error) {
       localStorage.removeItem('access_token')
@@ -50,13 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const login = async (username: string, password: string) => {
-    const formData = new FormData()
-    formData.append('username', username)
-    formData.append('password', password)
-
-    const response = await apiClient.post('/api/auth/login', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+  const login = async (email: string, password: string) => {
+    const response = await apiClient.post('/auth/login', {
+      email,
+      password
     })
 
     const { access_token, user } = response.data
@@ -66,17 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
-    await apiClient.post('/api/auth/logout')
+    await apiClient.post('/auth/logout')
     localStorage.removeItem('access_token')
     setUser(null)
     router.push('/login')
   }
 
   const register = async (username: string, email: string, password: string) => {
-    const response = await apiClient.post('/api/auth/register', {
-      username,
+    const response = await apiClient.post('/auth/register', {
       email,
-      password
+      password,
+      first_name: username.split('@')[0],
+      last_name: 'User'
     })
 
     if (response.data.access_token) {

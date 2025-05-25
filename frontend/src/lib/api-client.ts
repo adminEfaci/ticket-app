@@ -11,10 +11,16 @@ export const apiClient = axios.create({
 
 // Add auth token to requests
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Don't set Content-Type for FormData - let browser set it with boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  
   return config;
 });
 
@@ -23,7 +29,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
+      localStorage.removeItem('access_token');
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -33,16 +39,16 @@ apiClient.interceptors.response.use(
 // API functions
 export const api = {
   // Auth
-  login: (credentials: { username: string; password: string }) =>
-    apiClient.post('/api/auth/login', credentials),
+  login: (credentials: { email: string; password: string }) =>
+    apiClient.post('/auth/login', credentials),
   
   // Batches
   uploadBatch: (files: FormData) =>
-    apiClient.post('/api/upload/batch', files, {
+    apiClient.post('/api/upload/files', files, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   
-  getBatches: () => apiClient.get('/api/batches'),
+  getBatches: () => apiClient.get('/api/batch'),
   
   processBatch: (batchId: string) =>
     apiClient.post(`/api/batch/${batchId}/process`),

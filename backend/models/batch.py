@@ -15,6 +15,7 @@ class ProcessingBatchBase(SQLModel):
     created_by: UUID = Field(foreign_key="user.id", index=True)
     client_id: Optional[UUID] = Field(None, foreign_key="user.id", index=True)  # For client users
     status: BatchStatus = Field(default=BatchStatus.PENDING, index=True)
+    description: Optional[str] = Field(None, max_length=255)
     xls_filename: str = Field(max_length=255)
     pdf_filename: str = Field(max_length=255)
     file_hash: Optional[str] = Field(None, max_length=64, index=True)  # sha256 hash

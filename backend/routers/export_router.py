@@ -12,6 +12,7 @@ from ..middleware.auth_middleware import get_current_user
 from ..models.user import User, UserRole
 from ..models.export import ExportRequest, ExportResult
 from ..services.export_bundle_service import ExportBundleService
+from backend.models.user import User
 
 logger = logging.getLogger(__name__)
 
